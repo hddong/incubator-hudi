@@ -37,6 +37,7 @@ public class ComplexKeyGenerator extends KeyGenerator {
 
   private static final String DEFAULT_PARTITION_PATH = "default";
   private static final String DEFAULT_PARTITION_PATH_SEPARATOR = "/";
+  public static final String DEFAULT_RECORD_KEY_SEPARATOR = ":";
 
   protected static final String NULL_RECORDKEY_PLACEHOLDER = "__null__";
   protected static final String EMPTY_RECORDKEY_PLACEHOLDER = "__empty__";
@@ -50,10 +51,10 @@ public class ComplexKeyGenerator extends KeyGenerator {
   public ComplexKeyGenerator(TypedProperties props) {
     super(props);
     this.recordKeyFields = Arrays.asList(props.getString(DataSourceWriteOptions.RECORDKEY_FIELD_OPT_KEY()).split(","))
-            .stream().map(String::trim).collect(Collectors.toList());
+        .stream().map(String::trim).collect(Collectors.toList());
     this.partitionPathFields =
         Arrays.asList(props.getString(DataSourceWriteOptions.PARTITIONPATH_FIELD_OPT_KEY()).split(","))
-                .stream().map(String::trim).collect(Collectors.toList());
+            .stream().map(String::trim).collect(Collectors.toList());
     this.hiveStylePartitioning = props.getBoolean(DataSourceWriteOptions.HIVE_STYLE_PARTITIONING_OPT_KEY(),
         Boolean.parseBoolean(DataSourceWriteOptions.DEFAULT_HIVE_STYLE_PARTITIONING_OPT_VAL()));
   }
@@ -88,7 +89,7 @@ public class ComplexKeyGenerator extends KeyGenerator {
       String fieldVal = DataSourceUtils.getNestedFieldValAsString(record, partitionPathField, true);
       if (fieldVal == null || fieldVal.isEmpty()) {
         partitionPath.append(hiveStylePartitioning ? partitionPathField + "=" + DEFAULT_PARTITION_PATH
-                : DEFAULT_PARTITION_PATH);
+            : DEFAULT_PARTITION_PATH);
       } else {
         partitionPath.append(hiveStylePartitioning ? partitionPathField + "=" + fieldVal : fieldVal);
       }

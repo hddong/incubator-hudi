@@ -62,6 +62,9 @@
                 <copy
                   file="${project.basedir}/../../../../packaging/hudi-utilities-bundle/target/hudi-utilities-bundle_${scala.binary.version}-${project.version}.jar"
                   tofile="target/hoodie-utilities.jar"/>
+                <copy
+                  file="${project.basedir}/../../../../packaging/hudi-integ-test-bundle/target/hudi-integ-test-bundle-${project.version}.jar"
+                  tofile="target/hoodie-integ-test-bundle.jar"/>
               </tasks>
             </configuration>
             <goals>

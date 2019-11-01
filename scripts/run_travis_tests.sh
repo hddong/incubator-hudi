@@ -21,8 +21,13 @@ modules=$2
 sparkVersion=2.4.4
 hadoopVersion=2.7
 
+<<<<<<< 8919be6a5d8038db7265bfd7459d72fbd545f133
 if [ "$mode" = "unit" ]; then
   mvn clean install -Punit-tests -DskipTests -q
+=======
+if [ "$mode" = "unit_main" ];
+then
+>>>>>>> [HUDI-394] Provide a basic implementation of test suite
   echo "Running Unit Tests"
   mvn test -Punit-tests -pl "$modules" -B
 elif [ "$mode" = "functional" ]; then
