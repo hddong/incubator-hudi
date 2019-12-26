@@ -19,6 +19,7 @@
 package org.apache.hudi.common.model;
 
 import org.apache.hudi.common.util.FSUtils;
+import org.apache.hudi.exception.HoodieException;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -48,6 +49,47 @@ public class HoodieCommitMetadata implements Serializable {
   protected Boolean compacted;
 
   private Map<String, String> extraMetadataMap;
+
+  private Type operateType = Type.UNKNOWN;
+
+  // insert/upsert/bulkinsert/delete
+  public enum Type {
+    // directly insert
+    INSERT("insert"),
+    // update and insert
+    UPSERT("upsert"),
+    // bulk insert
+    BULK_INSERT("bulk_insert"),
+    // delete
+    DELETE("delete"),
+    // used for old version
+    UNKNOWN("unknown");
+
+    private final String value;
+
+    Type(String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return this.value;
+    }
+
+    public static Type fromValue(String value) {
+      switch (value) {
+        case "insert": return INSERT;
+        case "upsert": return UPSERT;
+        case "bulk_insert": return BULK_INSERT;
+        case "delete": return DELETE;
+        default: throw new HoodieException("Invalid value of Type.");
+      }
+    }
+
+    @Override
+    public String toString() {
+      return this.value;
+    }
+  }
 
   // for ser/deser
   public HoodieCommitMetadata() {
@@ -114,6 +156,14 @@ public class HoodieCommitMetadata implements Serializable {
       fullPaths.put(entry.getKey(), fullPath);
     }
     return fullPaths;
+  }
+
+  public void setOperateType(Type type) {
+    this.operateType = type;
+  }
+
+  public Type getOperateType() {
+    return this.operateType;
   }
 
   public String toJsonString() throws IOException {

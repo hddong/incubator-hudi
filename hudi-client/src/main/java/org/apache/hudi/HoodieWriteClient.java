@@ -27,6 +27,7 @@ import org.apache.hudi.client.embedded.EmbeddedTimelineService;
 import org.apache.hudi.common.HoodieRollbackStat;
 import org.apache.hudi.common.model.EmptyHoodieRecordPayload;
 import org.apache.hudi.common.model.HoodieCommitMetadata;
+import org.apache.hudi.common.model.HoodieCommitMetadata.Type;
 import org.apache.hudi.common.model.HoodieDataFile;
 import org.apache.hudi.common.model.HoodieKey;
 import org.apache.hudi.common.model.HoodieRecord;
@@ -354,9 +355,9 @@ public class HoodieWriteClient<T extends HoodieRecordPayload> extends AbstractHo
         return upsertRecordsInternal(taggedValidRecords, commitTime, table, true);
       } else {
         // if entire set of keys are non existent
-        saveWorkloadProfileMetadataToInflight(new WorkloadProfile(jsc.emptyRDD()), table, commitTime);
+        saveWorkloadProfileMetadataToInflight(new WorkloadProfile(jsc.emptyRDD()), table, commitTime, HoodieCommitMetadata.Type.DELETE);
         JavaRDD<WriteStatus> writeStatusRDD = jsc.emptyRDD();
-        commitOnAutoCommit(commitTime, writeStatusRDD, table.getMetaClient().getCommitActionType());
+        commitOnAutoCommit(commitTime, writeStatusRDD, table.getMetaClient().getCommitActionType(), Type.DELETE);
         return writeStatusRDD;
       }
     } catch (Throwable e) {
@@ -394,13 +395,13 @@ public class HoodieWriteClient<T extends HoodieRecordPayload> extends AbstractHo
         .mapPartitionsWithIndex(new BulkInsertMapFunction<T>(commitTime, config, table, fileIDPrefixes), true)
         .flatMap(writeStatuses -> writeStatuses.iterator());
 
-    return updateIndexAndCommitIfNeeded(writeStatusRDD, table, commitTime);
+    return updateIndexAndCommitIfNeeded(writeStatusRDD, table, commitTime, Type.BULK_INSERT);
   }
 
-  private void commitOnAutoCommit(String commitTime, JavaRDD<WriteStatus> resultRDD, String actionType) {
+  private void commitOnAutoCommit(String commitTime, JavaRDD<WriteStatus> resultRDD, String actionType, Type operateType) {
     if (config.shouldAutoCommit()) {
       LOG.info("Auto commit enabled: Committing " + commitTime);
-      boolean commitResult = commit(commitTime, resultRDD, Option.empty(), actionType);
+      boolean commitResult = commit(commitTime, resultRDD, Option.empty(), actionType, operateType);
       if (!commitResult) {
         throw new HoodieCommitException("Failed to commit " + commitTime);
       }
@@ -420,7 +421,8 @@ public class HoodieWriteClient<T extends HoodieRecordPayload> extends AbstractHo
    * are unknown across batches Inserts (which are new parquet files) are rolled back based on commit time. // TODO :
    * Create a new WorkloadProfile metadata file instead of using HoodieCommitMetadata
    */
-  private void saveWorkloadProfileMetadataToInflight(WorkloadProfile profile, HoodieTable<T> table, String commitTime)
+  private void saveWorkloadProfileMetadataToInflight(WorkloadProfile profile, HoodieTable<T> table, String commitTime,
+                                                     HoodieCommitMetadata.Type operationType)
       throws HoodieCommitException {
     try {
       HoodieCommitMetadata metadata = new HoodieCommitMetadata();
@@ -435,6 +437,7 @@ public class HoodieWriteClient<T extends HoodieRecordPayload> extends AbstractHo
           metadata.addWriteStat(path.toString(), writeStat);
         });
       });
+      metadata.setOperateType(operationType);
 
       HoodieActiveTimeline activeTimeline = table.getActiveTimeline();
       String commitActionType = table.getMetaClient().getCommitActionType();
@@ -461,7 +464,7 @@ public class HoodieWriteClient<T extends HoodieRecordPayload> extends AbstractHo
     if (hoodieTable.isWorkloadProfileNeeded()) {
       profile = new WorkloadProfile(preppedRecords);
       LOG.info("Workload profile :" + profile);
-      saveWorkloadProfileMetadataToInflight(profile, hoodieTable, commitTime);
+      saveWorkloadProfileMetadataToInflight(profile, hoodieTable, commitTime, HoodieCommitMetadata.Type.UPSERT);
     }
 
     // partition using the insert partitioner
@@ -475,7 +478,8 @@ public class HoodieWriteClient<T extends HoodieRecordPayload> extends AbstractHo
       }
     }, true).flatMap(List::iterator);
 
-    return updateIndexAndCommitIfNeeded(writeStatusRDD, hoodieTable, commitTime);
+    Type operationType = isUpsert ? Type.UPSERT : Type.INSERT;
+    return updateIndexAndCommitIfNeeded(writeStatusRDD, hoodieTable, commitTime, operationType);
   }
 
   private Partitioner getPartitioner(HoodieTable table, boolean isUpsert, WorkloadProfile profile) {
@@ -487,7 +491,7 @@ public class HoodieWriteClient<T extends HoodieRecordPayload> extends AbstractHo
   }
 
   private JavaRDD<WriteStatus> updateIndexAndCommitIfNeeded(JavaRDD<WriteStatus> writeStatusRDD, HoodieTable<T> table,
-      String commitTime) {
+      String commitTime, Type operateType) {
     // cache writeStatusRDD before updating index, so that all actions before this are not triggered again for future
     // RDD actions that are performed after updating the index.
     writeStatusRDD = writeStatusRDD.persist(config.getWriteStatusStorageLevel());
@@ -497,7 +501,7 @@ public class HoodieWriteClient<T extends HoodieRecordPayload> extends AbstractHo
     metrics.updateIndexMetrics(UPDATE_STR, metrics.getDurationInMs(indexTimer == null ? 0L : indexTimer.stop()));
     indexTimer = null;
     // Trigger the insert and collect statuses
-    commitOnAutoCommit(commitTime, statuses, table.getMetaClient().getCommitActionType());
+    commitOnAutoCommit(commitTime, statuses, table.getMetaClient().getCommitActionType(), operateType);
     return statuses;
   }
 
@@ -510,21 +514,21 @@ public class HoodieWriteClient<T extends HoodieRecordPayload> extends AbstractHo
   /**
    * Commit changes performed at the given commitTime marker.
    */
-  public boolean commit(String commitTime, JavaRDD<WriteStatus> writeStatuses) {
-    return commit(commitTime, writeStatuses, Option.empty());
+  public boolean commit(String commitTime, JavaRDD<WriteStatus> writeStatuses, Type operationType) {
+    return commit(commitTime, writeStatuses, Option.empty(), operationType);
   }
 
   /**
    * Commit changes performed at the given commitTime marker.
    */
   public boolean commit(String commitTime, JavaRDD<WriteStatus> writeStatuses,
-      Option<Map<String, String>> extraMetadata) {
+      Option<Map<String, String>> extraMetadata, Type operationType) {
     HoodieTableMetaClient metaClient = createMetaClient(false);
-    return commit(commitTime, writeStatuses, extraMetadata, metaClient.getCommitActionType());
+    return commit(commitTime, writeStatuses, extraMetadata, metaClient.getCommitActionType(), operationType);
   }
 
   private boolean commit(String commitTime, JavaRDD<WriteStatus> writeStatuses,
-      Option<Map<String, String>> extraMetadata, String actionType) {
+      Option<Map<String, String>> extraMetadata, String actionType, Type operationType) {
 
     LOG.info("Commiting " + commitTime);
     // Create a Hoodie table which encapsulated the commits and files visible
@@ -535,6 +539,7 @@ public class HoodieWriteClient<T extends HoodieRecordPayload> extends AbstractHo
 
     List<HoodieWriteStat> stats = writeStatuses.map(WriteStatus::getStat).collect();
 
+    metadata.setOperateType(operationType);
     updateMetadataAndRollingStats(actionType, metadata, stats);
 
     // Finalize write

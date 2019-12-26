@@ -21,6 +21,7 @@ package org.apache.hudi;
 import org.apache.hudi.common.HoodieClientTestUtils;
 import org.apache.hudi.common.HoodieTestDataGenerator;
 import org.apache.hudi.common.model.HoodieCommitMetadata;
+import org.apache.hudi.common.model.HoodieCommitMetadata.Type;
 import org.apache.hudi.common.model.HoodieDataFile;
 import org.apache.hudi.common.model.HoodieKey;
 import org.apache.hudi.common.model.HoodieRecord;
@@ -87,7 +88,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
    */
   @Test
   public void testAutoCommitOnInsert() throws Exception {
-    testAutoCommit(HoodieWriteClient::insert, false);
+    testAutoCommit(HoodieWriteClient::insert, false, Type.INSERT);
   }
 
   /**
@@ -95,7 +96,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
    */
   @Test
   public void testAutoCommitOnInsertPrepped() throws Exception {
-    testAutoCommit(HoodieWriteClient::insertPreppedRecords, true);
+    testAutoCommit(HoodieWriteClient::insertPreppedRecords, true, Type.INSERT);
   }
 
   /**
@@ -103,7 +104,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
    */
   @Test
   public void testAutoCommitOnUpsert() throws Exception {
-    testAutoCommit(HoodieWriteClient::upsert, false);
+    testAutoCommit(HoodieWriteClient::upsert, false, Type.UPSERT);
   }
 
   /**
@@ -111,7 +112,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
    */
   @Test
   public void testAutoCommitOnUpsertPrepped() throws Exception {
-    testAutoCommit(HoodieWriteClient::upsertPreppedRecords, true);
+    testAutoCommit(HoodieWriteClient::upsertPreppedRecords, true, Type.UPSERT);
   }
 
   /**
@@ -119,7 +120,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
    */
   @Test
   public void testAutoCommitOnBulkInsert() throws Exception {
-    testAutoCommit(HoodieWriteClient::bulkInsert, false);
+    testAutoCommit(HoodieWriteClient::bulkInsert, false, Type.BULK_INSERT);
   }
 
   /**
@@ -128,7 +129,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
   @Test
   public void testAutoCommitOnBulkInsertPrepped() throws Exception {
     testAutoCommit((writeClient, recordRDD, commitTime) -> writeClient.bulkInsertPreppedRecords(recordRDD, commitTime,
-        Option.empty()), true);
+        Option.empty()), true, Type.BULK_INSERT);
   }
 
   /**
@@ -138,7 +139,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
    * @throws Exception in case of failure
    */
   private void testAutoCommit(Function3<JavaRDD<WriteStatus>, HoodieWriteClient, JavaRDD<HoodieRecord>, String> writeFn,
-      boolean isPrepped) throws Exception {
+      boolean isPrepped, Type operateType) throws Exception {
     // Set autoCommit false
     HoodieWriteConfig cfg = getConfigBuilder().withAutoCommit(false).build();
     try (HoodieWriteClient client = getHoodieWriteClient(cfg);) {
@@ -151,7 +152,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
 
       assertFalse("If Autocommit is false, then commit should not be made automatically",
           HoodieTestUtils.doesCommitExist(basePath, newCommitTime));
-      assertTrue("Commit should succeed", client.commit(newCommitTime, result));
+      assertTrue("Commit should succeed", client.commit(newCommitTime, result, operateType));
       assertTrue("After explicit commit, commit file should be created",
           HoodieTestUtils.doesCommitExist(basePath, newCommitTime));
     }
@@ -753,7 +754,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
 
       JavaRDD<WriteStatus> result = client.bulkInsert(writeRecords, commitTime);
 
-      assertTrue("Commit should succeed", client.commit(commitTime, result));
+      assertTrue("Commit should succeed", client.commit(commitTime, result, Type.BULK_INSERT));
       assertTrue("After explicit commit, commit file should be created",
           HoodieTestUtils.doesCommitExist(basePath, commitTime));
 
@@ -800,7 +801,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
 
     JavaRDD<WriteStatus> result = client.bulkInsert(writeRecords, commitTime);
 
-    assertTrue("Commit should succeed", client.commit(commitTime, result));
+    assertTrue("Commit should succeed", client.commit(commitTime, result, Type.INSERT));
     assertTrue("After explicit commit, commit file should be created",
         HoodieTestUtils.doesCommitExist(basePath, commitTime));
 
@@ -830,7 +831,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
     writeRecords = jsc.parallelize(records, 1);
     result = client.upsert(writeRecords, commitTime);
 
-    assertTrue("Commit should succeed", client.commit(commitTime, result));
+    assertTrue("Commit should succeed", client.commit(commitTime, result, Type.UPSERT));
     assertTrue("After explicit commit, commit file should be created",
         HoodieTestUtils.doesCommitExist(basePath, commitTime));
 
@@ -869,7 +870,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
 
     // Delete orphan marker and commit should succeed
     metaClient.getFs().delete(result.getKey(), false);
-    assertTrue("Commit should succeed", client.commit(commitTime, result.getRight()));
+    assertTrue("Commit should succeed", client.commit(commitTime, result.getRight(), Type.DELETE));
     assertTrue("After explicit commit, commit file should be created",
         HoodieTestUtils.doesCommitExist(basePath, commitTime));
     // Marker directory must be removed
@@ -917,7 +918,7 @@ public class TestHoodieClientOnCopyOnWriteStorage extends TestHoodieClientBase {
     LOG.info("Created a dummy marker path=" + markerFilePath);
 
     try {
-      client.commit(commitTime, result);
+      client.commit(commitTime, result, Type.INSERT);
       fail("Commit should fail due to consistency check");
     } catch (HoodieCommitException cme) {
       assertTrue(cme.getCause() instanceof HoodieIOException);

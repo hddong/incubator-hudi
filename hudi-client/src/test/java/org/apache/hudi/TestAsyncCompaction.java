@@ -23,6 +23,7 @@ import org.apache.hudi.avro.model.HoodieCompactionPlan;
 import org.apache.hudi.common.HoodieClientTestUtils;
 import org.apache.hudi.common.HoodieTestDataGenerator;
 import org.apache.hudi.common.model.FileSlice;
+import org.apache.hudi.common.model.HoodieCommitMetadata.Type;
 import org.apache.hudi.common.model.HoodieDataFile;
 import org.apache.hudi.common.model.HoodieFileGroupId;
 import org.apache.hudi.common.model.HoodieRecord;
@@ -434,7 +435,7 @@ public class TestAsyncCompaction extends TestHoodieClientBase {
       List<WriteStatus> statusList = statuses.collect();
 
       if (!cfg.shouldAutoCommit()) {
-        client.commit(firstInstant, statuses);
+        client.commit(firstInstant, statuses, Type.UPSERT);
       }
       assertNoWriteErrors(statusList);
       metaClient = new HoodieTableMetaClient(jsc.hadoopConfiguration(), cfg.getBasePath());
@@ -518,7 +519,7 @@ public class TestAsyncCompaction extends TestHoodieClientBase {
     List<WriteStatus> statusList = statuses.collect();
     assertNoWriteErrors(statusList);
     if (!cfg.shouldAutoCommit() && !skipCommit) {
-      client.commit(instantTime, statuses);
+      client.commit(instantTime, statuses, Type.UPSERT);
     }
 
     Option<HoodieInstant> deltaCommit =

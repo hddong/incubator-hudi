@@ -28,6 +28,7 @@ import org.apache.hudi.common.HoodieTestDataGenerator;
 import org.apache.hudi.common.TestRawTripPayload.MetadataMergeWriteStatus;
 import org.apache.hudi.common.model.FileSlice;
 import org.apache.hudi.common.model.HoodieCommitMetadata;
+import org.apache.hudi.common.model.HoodieCommitMetadata.Type;
 import org.apache.hudi.common.model.HoodieDataFile;
 import org.apache.hudi.common.model.HoodieFileGroup;
 import org.apache.hudi.common.model.HoodieKey;
@@ -370,7 +371,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       JavaRDD<HoodieRecord> writeRecords = jsc.parallelize(records, 1);
 
       JavaRDD<WriteStatus> writeStatusJavaRDD = client.upsert(writeRecords, newCommitTime);
-      client.commit(newCommitTime, writeStatusJavaRDD);
+      client.commit(newCommitTime, writeStatusJavaRDD, Type.UPSERT);
       List<WriteStatus> statuses = writeStatusJavaRDD.collect();
       assertNoWriteErrors(statuses);
 
@@ -443,7 +444,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
 
         writeRecords = jsc.parallelize(copyOfRecords, 1);
         writeStatusJavaRDD = thirdClient.upsert(writeRecords, commitTime2);
-        thirdClient.commit(commitTime2, writeStatusJavaRDD);
+        thirdClient.commit(commitTime2, writeStatusJavaRDD, Type.UPSERT);
         statuses = writeStatusJavaRDD.collect();
         // Verify there are no errors
         assertNoWriteErrors(statuses);
@@ -473,7 +474,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
         records = dataGen.generateUpdates(newCommitTime, records);
 
         writeStatusJavaRDD = thirdClient.upsert(writeRecords, newCommitTime);
-        thirdClient.commit(newCommitTime, writeStatusJavaRDD);
+        thirdClient.commit(newCommitTime, writeStatusJavaRDD, Type.UPSERT);
         statuses = writeStatusJavaRDD.collect();
         // Verify there are no errors
         assertNoWriteErrors(statuses);
@@ -536,7 +537,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       JavaRDD<HoodieRecord> writeRecords = jsc.parallelize(records, 1);
 
       JavaRDD<WriteStatus> writeStatusJavaRDD = client.upsert(writeRecords, newCommitTime);
-      client.commit(newCommitTime, writeStatusJavaRDD);
+      client.commit(newCommitTime, writeStatusJavaRDD, Type.UPSERT);
       List<WriteStatus> statuses = writeStatusJavaRDD.collect();
       assertNoWriteErrors(statuses);
 
@@ -581,7 +582,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       statuses = nClient.upsert(jsc.parallelize(copyOfRecords, 1), newCommitTime).collect();
       // Verify there are no errors
       assertNoWriteErrors(statuses);
-      nClient.commit(newCommitTime, writeStatusJavaRDD);
+      nClient.commit(newCommitTime, writeStatusJavaRDD, Type.UPSERT);
       copyOfRecords.clear();
 
       // Schedule a compaction
@@ -598,7 +599,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       writeRecords = jsc.parallelize(records, 1);
 
       writeStatusJavaRDD = client.upsert(writeRecords, newCommitTime);
-      client.commit(newCommitTime, writeStatusJavaRDD);
+      client.commit(newCommitTime, writeStatusJavaRDD, Type.UPSERT);
       statuses = writeStatusJavaRDD.collect();
       // Verify there are no errors
       assertNoWriteErrors(statuses);
@@ -621,7 +622,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       writeRecords = jsc.parallelize(records, 1);
 
       writeStatusJavaRDD = client.upsert(writeRecords, newCommitTime);
-      client.commit(newCommitTime, writeStatusJavaRDD);
+      client.commit(newCommitTime, writeStatusJavaRDD, Type.UPSERT);
       statuses = writeStatusJavaRDD.collect();
       // Verify there are no errors
       assertNoWriteErrors(statuses);
@@ -662,7 +663,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       statuses = client.upsert(jsc.parallelize(copyOfRecords, 1), newCommitTime).collect();
       // Verify there are no errors
       assertNoWriteErrors(statuses);
-      client.commit(newCommitTime, writeStatusJavaRDD);
+      client.commit(newCommitTime, writeStatusJavaRDD, Type.UPSERT);
       copyOfRecords.clear();
 
       // Rollback latest commit first
@@ -866,7 +867,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       List<HoodieRecord> records = dataGen.generateInserts(newCommitTime, 100);
       JavaRDD<HoodieRecord> recordsRDD = jsc.parallelize(records, 1);
       JavaRDD<WriteStatus> statuses = writeClient.insert(recordsRDD, newCommitTime);
-      writeClient.commit(newCommitTime, statuses);
+      writeClient.commit(newCommitTime, statuses, Type.INSERT);
 
       HoodieTable table =
           HoodieTable.getHoodieTable(new HoodieTableMetaClient(jsc.hadoopConfiguration(), basePath), config, jsc);
@@ -923,7 +924,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       records = dataGen.generateInserts(newCommitTime, 100);
       recordsRDD = jsc.parallelize(records, 1);
       statuses = writeClient.insert(recordsRDD, newCommitTime);
-      writeClient.commit(newCommitTime, statuses);
+      writeClient.commit(newCommitTime, statuses, Type.INSERT);
 
       // Sleep for small interval (at least 1 second) to force a new rollback start time.
       Thread.sleep(1000);
@@ -980,7 +981,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       List<HoodieRecord> records = dataGen.generateInserts(newCommitTime, 100);
       JavaRDD<HoodieRecord> recordsRDD = jsc.parallelize(records, 1);
       JavaRDD<WriteStatus> statuses = writeClient.insert(recordsRDD, newCommitTime);
-      writeClient.commit(newCommitTime, statuses);
+      writeClient.commit(newCommitTime, statuses, Type.INSERT);
       // trigger an action
       statuses.collect();
 
@@ -1049,7 +1050,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       JavaRDD<HoodieRecord> writeRecords = jsc.parallelize(records, 1);
 
       JavaRDD<WriteStatus> statuses = client.insert(writeRecords, commitTime);
-      assertTrue("Commit should succeed", client.commit(commitTime, statuses));
+      assertTrue("Commit should succeed", client.commit(commitTime, statuses, Type.INSERT));
 
       // Read from commit file
       table = HoodieTable.getHoodieTable(metaClient, cfg, jsc);
@@ -1074,7 +1075,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       records = dataGen.generateUpdates(commitTime, records);
       writeRecords = jsc.parallelize(records, 1);
       statuses = client.upsert(writeRecords, commitTime);
-      assertTrue("Commit should succeed", client.commit(commitTime, statuses));
+      assertTrue("Commit should succeed", client.commit(commitTime, statuses, Type.UPSERT));
 
       // Read from commit file
       table = HoodieTable.getHoodieTable(metaClient, cfg, jsc);
@@ -1143,7 +1144,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       JavaRDD<HoodieRecord> writeRecords = jsc.parallelize(records, 1);
 
       JavaRDD<WriteStatus> statuses = client.insert(writeRecords, commitTime);
-      assertTrue("Commit should succeed", client.commit(commitTime, statuses));
+      assertTrue("Commit should succeed", client.commit(commitTime, statuses, Type.INSERT));
 
       // Read from commit file
       table = HoodieTable.getHoodieTable(metaClient, cfg, jsc);
@@ -1172,7 +1173,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       records.addAll(dataGen.generateInserts(commitTime, 200));
       writeRecords = jsc.parallelize(records, 1);
       statuses = client.upsert(writeRecords, commitTime);
-      assertTrue("Commit should succeed", client.commit(commitTime, statuses));
+      assertTrue("Commit should succeed", client.commit(commitTime, statuses, Type.UPSERT));
 
       // Read from commit file
       table = HoodieTable.getHoodieTable(metaClient, cfg, jsc);
@@ -1231,7 +1232,7 @@ public class TestMergeOnReadTable extends HoodieClientTestHarness {
       records.addAll(dataGen.generateInserts(commitTime, 200));
       writeRecords = jsc.parallelize(records, 1);
       statuses = client.upsert(writeRecords, commitTime);
-      assertTrue("Commit should succeed", client.commit(commitTime, statuses));
+      assertTrue("Commit should succeed", client.commit(commitTime, statuses, Type.UPSERT));
 
       // Read from commit file
       table = HoodieTable.getHoodieTable(metaClient, cfg, jsc);

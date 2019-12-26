@@ -1,0 +1,87 @@
+{
+  "partitionToWriteStats" : {
+    "americas/brazil/sao_paulo" : [ {
+      "fileId" : "c98be3af-b96f-4a00-bc67-5e6941852f73-0",
+      "path" : "americas/brazil/sao_paulo/c98be3af-b96f-4a00-bc67-5e6941852f73-0_0-83-111_20191210154443.parquet",
+      "prevCommit" : "null",
+      "numWrites" : 3,
+      "numDeletes" : 0,
+      "numUpdateWrites" : 0,
+      "numInserts" : 3,
+      "totalWriteBytes" : 437438,
+      "totalWriteErrors" : 0,
+      "tempPath" : null,
+      "partitionPath" : "americas/brazil/sao_paulo",
+      "totalLogRecords" : 0,
+      "totalLogFilesCompacted" : 0,
+      "totalLogSizeCompacted" : 0,
+      "totalUpdatedRecordsCompacted" : 0,
+      "totalLogBlocks" : 0,
+      "totalCorruptLogBlock" : 0,
+      "totalRollbackBlocks" : 0,
+      "fileSizeInBytes" : 437438
+    } ],
+    "americas/united_states/san_francisco" : [ {
+      "fileId" : "45c89e35-2dbf-41c9-8028-47a188e8555e-0",
+      "path" : "americas/united_states/san_francisco/45c89e35-2dbf-41c9-8028-47a188e8555e-0_1-83-112_20191210154443.parquet",
+      "prevCommit" : "null",
+      "numWrites" : 4,
+      "numDeletes" : 0,
+      "numUpdateWrites" : 0,
+      "numInserts" : 4,
+      "totalWriteBytes" : 437725,
+      "totalWriteErrors" : 0,
+      "tempPath" : null,
+      "partitionPath" : "americas/united_states/san_francisco",
+      "totalLogRecords" : 0,
+      "totalLogFilesCompacted" : 0,
+      "totalLogSizeCompacted" : 0,
+      "totalUpdatedRecordsCompacted" : 0,
+      "totalLogBlocks" : 0,
+      "totalCorruptLogBlock" : 0,
+      "totalRollbackBlocks" : 0,
+      "fileSizeInBytes" : 437725
+    } ],
+    "asia/india/chennai" : [ {
+      "fileId" : "b7ac924b-dc49-421d-803b-8d422a44c228-0",
+      "path" : "asia/india/chennai/b7ac924b-dc49-421d-803b-8d422a44c228-0_2-83-113_20191210154443.parquet",
+      "prevCommit" : "null",
+      "numWrites" : 3,
+      "numDeletes" : 0,
+      "numUpdateWrites" : 0,
+      "numInserts" : 3,
+      "totalWriteBytes" : 437298,
+      "totalWriteErrors" : 0,
+      "tempPath" : null,
+      "partitionPath" : "asia/india/chennai",
+      "totalLogRecords" : 0,
+      "totalLogFilesCompacted" : 0,
+      "totalLogSizeCompacted" : 0,
+      "totalUpdatedRecordsCompacted" : 0,
+      "totalLogBlocks" : 0,
+      "totalCorruptLogBlock" : 0,
+      "totalRollbackBlocks" : 0,
+      "fileSizeInBytes" : 437298
+    } ]
+  },
+  "compacted" : false,
+  "extraMetadataMap" : {
+    "ROLLING_STAT" : "{\n  \"partitionToRollingStats\" : {\n    \"americas/brazil/sao_paulo\" : {\n      \"c98be3af-b96f-4a00-bc67-5e6941852f73-0\" : {\n        \"fileId\" : \"c98be3af-b96f-4a00-bc67-5e6941852f73-0\",\n        \"inserts\" : 3,\n        \"upserts\" : 0,\n        \"deletes\" : 0,\n        \"totalInputWriteBytesToDisk\" : 0,\n        \"totalInputWriteBytesOnDisk\" : 437438\n      }\n    },\n    \"americas/united_states/san_francisco\" : {\n      \"45c89e35-2dbf-41c9-8028-47a188e8555e-0\" : {\n        \"fileId\" : \"45c89e35-2dbf-41c9-8028-47a188e8555e-0\",\n        \"inserts\" : 4,\n        \"upserts\" : 0,\n        \"deletes\" : 0,\n        \"totalInputWriteBytesToDisk\" : 0,\n        \"totalInputWriteBytesOnDisk\" : 437725\n      }\n    },\n    \"asia/india/chennai\" : {\n      \"b7ac924b-dc49-421d-803b-8d422a44c228-0\" : {\n        \"fileId\" : \"b7ac924b-dc49-421d-803b-8d422a44c228-0\",\n        \"inserts\" : 3,\n        \"upserts\" : 0,\n        \"deletes\" : 0,\n        \"totalInputWriteBytesToDisk\" : 0,\n        \"totalInputWriteBytesOnDisk\" : 437298\n      }\n    }\n  },\n  \"actionType\" : \"commit\"\n}"
+  },
+  "extraMetadata" : {
+    "ROLLING_STAT" : "{\n  \"partitionToRollingStats\" : {\n    \"americas/brazil/sao_paulo\" : {\n      \"c98be3af-b96f-4a00-bc67-5e6941852f73-0\" : {\n        \"fileId\" : \"c98be3af-b96f-4a00-bc67-5e6941852f73-0\",\n        \"inserts\" : 3,\n        \"upserts\" : 0,\n        \"deletes\" : 0,\n        \"totalInputWriteBytesToDisk\" : 0,\n        \"totalInputWriteBytesOnDisk\" : 437438\n      }\n    },\n    \"americas/united_states/san_francisco\" : {\n      \"45c89e35-2dbf-41c9-8028-47a188e8555e-0\" : {\n        \"fileId\" : \"45c89e35-2dbf-41c9-8028-47a188e8555e-0\",\n        \"inserts\" : 4,\n        \"upserts\" : 0,\n        \"deletes\" : 0,\n        \"totalInputWriteBytesToDisk\" : 0,\n        \"totalInputWriteBytesOnDisk\" : 437725\n      }\n    },\n    \"asia/india/chennai\" : {\n      \"b7ac924b-dc49-421d-803b-8d422a44c228-0\" : {\n        \"fileId\" : \"b7ac924b-dc49-421d-803b-8d422a44c228-0\",\n        \"inserts\" : 3,\n        \"upserts\" : 0,\n        \"deletes\" : 0,\n        \"totalInputWriteBytesToDisk\" : 0,\n        \"totalInputWriteBytesOnDisk\" : 437298\n      }\n    }\n  },\n  \"actionType\" : \"commit\"\n}"
+  },
+  "fileIdAndRelativePaths" : {
+    "45c89e35-2dbf-41c9-8028-47a188e8555e-0" : "americas/united_states/san_francisco/45c89e35-2dbf-41c9-8028-47a188e8555e-0_1-83-112_20191210154443.parquet",
+    "c98be3af-b96f-4a00-bc67-5e6941852f73-0" : "americas/brazil/sao_paulo/c98be3af-b96f-4a00-bc67-5e6941852f73-0_0-83-111_20191210154443.parquet",
+    "b7ac924b-dc49-421d-803b-8d422a44c228-0" : "asia/india/chennai/b7ac924b-dc49-421d-803b-8d422a44c228-0_2-83-113_20191210154443.parquet"
+  },
+  "totalRecordsDeleted" : 0,
+  "totalLogRecordsCompacted" : 0,
+  "totalScanTime" : 0,
+  "totalCreateTime" : 4895,
+  "totalUpsertTime" : 0,
+  "totalCompactedRecordsUpdated" : 0,
+  "totalLogFilesCompacted" : 0,
+  "totalLogFilesSize" : 0
+}

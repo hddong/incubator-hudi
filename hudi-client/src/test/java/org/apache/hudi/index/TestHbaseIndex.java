@@ -22,6 +22,7 @@ import org.apache.hudi.HoodieClientTestHarness;
 import org.apache.hudi.HoodieWriteClient;
 import org.apache.hudi.WriteStatus;
 import org.apache.hudi.common.HoodieTestDataGenerator;
+import org.apache.hudi.common.model.HoodieCommitMetadata.Type;
 import org.apache.hudi.common.model.HoodieRecord;
 import org.apache.hudi.common.model.HoodieWriteStat;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
@@ -150,7 +151,7 @@ public class TestHbaseIndex extends HoodieClientTestHarness {
       assert (javaRDD.filter(record -> record.isCurrentLocationKnown()).collect().size() == 0);
 
       // Now commit this & update location of records inserted and validate no errors
-      writeClient.commit(newCommitTime, writeStatues);
+      writeClient.commit(newCommitTime, writeStatues, Type.UPSERT);
       // Now tagLocation for these records, hbaseIndex should tag them correctly
       metaClient = HoodieTableMetaClient.reload(metaClient);
       hoodieTable = HoodieTable.getHoodieTable(metaClient, config, jsc);
@@ -189,7 +190,7 @@ public class TestHbaseIndex extends HoodieClientTestHarness {
     assertNoWriteErrors(writeStatues.collect());
 
     // Now commit this & update location of records inserted and validate no errors
-    writeClient.commit(newCommitTime, writeStatues);
+    writeClient.commit(newCommitTime, writeStatues, Type.UPSERT);
     // Now tagLocation for these records, hbaseIndex should tag them correctly
     metaClient = HoodieTableMetaClient.reload(metaClient);
     hoodieTable = HoodieTable.getHoodieTable(metaClient, config, jsc);
@@ -218,7 +219,7 @@ public class TestHbaseIndex extends HoodieClientTestHarness {
     assertNoWriteErrors(writeStatues.collect());
 
     // commit this upsert
-    writeClient.commit(newCommitTime, writeStatues);
+    writeClient.commit(newCommitTime, writeStatues, Type.UPSERT);
     hoodieTable = HoodieTable.getHoodieTable(metaClient, config, jsc);
     // Now tagLocation for these records, hbaseIndex should tag them
     JavaRDD<HoodieRecord> javaRDD = index.tagLocation(writeRecords, jsc, hoodieTable);
@@ -294,7 +295,7 @@ public class TestHbaseIndex extends HoodieClientTestHarness {
     JavaRDD<WriteStatus> writeStatues = writeClient.upsert(writeRecords, newCommitTime);
 
     // commit this upsert
-    writeClient.commit(newCommitTime, writeStatues);
+    writeClient.commit(newCommitTime, writeStatues, Type.UPSERT);
 
     // Mock hbaseConnection and related entities
     Connection hbaseConnection = Mockito.mock(Connection.class);

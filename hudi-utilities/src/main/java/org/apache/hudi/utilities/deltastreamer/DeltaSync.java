@@ -371,7 +371,8 @@ public class DeltaSync implements Serializable {
             + totalErrorRecords + "/" + totalRecords);
       }
 
-      boolean success = writeClient.commit(commitTime, writeStatusRDD, Option.of(checkpointCommitMetadata));
+      boolean success = writeClient.commit(commitTime, writeStatusRDD, Option.of(checkpointCommitMetadata),
+          HoodieCommitMetadata.Type.fromValue(cfg.operation.toString()));
       if (success) {
         LOG.info("Commit " + commitTime + " successful!");
 

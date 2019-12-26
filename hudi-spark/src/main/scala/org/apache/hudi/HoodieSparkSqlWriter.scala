@@ -24,6 +24,7 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hudi.DataSourceWriteOptions._
+import org.apache.hudi.common.model.HoodieCommitMetadata
 import org.apache.hudi.common.table.HoodieTableMetaClient
 import org.apache.hudi.common.util.{FSUtils, TypedProperties}
 import org.apache.hudi.config.HoodieWriteConfig
@@ -99,6 +100,8 @@ private[hudi] object HoodieSparkSqlWriter {
       // Convert to RDD[HoodieRecord]
       val keyGenerator = DataSourceUtils.createKeyGenerator(toProperties(parameters))
       val genericRecords: RDD[GenericRecord] = AvroConversionUtils.createRdd(df, structName, nameSpace)
+      val testGen = genericRecords.first()
+      DataSourceUtils.getNestedFieldVal(testGen, parameters(PRECOMBINE_FIELD_OPT_KEY))
       val hoodieAllIncomingRecords = genericRecords.map(gr => {
         val orderingVal = DataSourceUtils.getNestedFieldValAsString(
           gr, parameters(PRECOMBINE_FIELD_OPT_KEY)).asInstanceOf[Comparable[_]]
@@ -155,10 +158,11 @@ private[hudi] object HoodieSparkSqlWriter {
           val metaMap = parameters.filter(kv =>
             kv._1.startsWith(parameters(COMMIT_METADATA_KEYPREFIX_OPT_KEY)))
           val commitSuccess = if (metaMap.isEmpty) {
-            client.commit(commitTime, writeStatuses)
+            client.commit(commitTime, writeStatuses, HoodieCommitMetadata.Type.fromValue(operation))
           } else {
             client.commit(commitTime, writeStatuses,
-              common.util.Option.of(new util.HashMap[String, String](mapAsJavaMap(metaMap))))
+              common.util.Option.of(new util.HashMap[String, String](mapAsJavaMap(metaMap))),
+              HoodieCommitMetadata.Type.fromValue(operation))
           }
 
           if (commitSuccess) {
@@ -232,10 +236,11 @@ private[hudi] object HoodieSparkSqlWriter {
           val metaMap = parameters.filter(kv =>
             kv._1.startsWith(parameters(COMMIT_METADATA_KEYPREFIX_OPT_KEY)))
           val commitSuccess = if (metaMap.isEmpty) {
-            client.commit(commitTime, writeStatuses)
+            client.commit(commitTime, writeStatuses, HoodieCommitMetadata.Type.fromValue(operation))
           } else {
             client.commit(commitTime, writeStatuses,
-              common.util.Option.of(new util.HashMap[String, String](mapAsJavaMap(metaMap))))
+              common.util.Option.of(new util.HashMap[String, String](mapAsJavaMap(metaMap))),
+              HoodieCommitMetadata.Type.fromValue(operation))
           }
 
           if (commitSuccess) {
