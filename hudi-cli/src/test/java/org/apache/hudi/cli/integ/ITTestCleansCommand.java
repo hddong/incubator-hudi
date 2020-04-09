@@ -21,11 +21,9 @@ package org.apache.hudi.cli.integ;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hudi.cli.AbstractShellIntegrationTest;
 import org.apache.hudi.cli.HoodieCLI;
-import org.apache.hudi.cli.commands.SparkEnvCommand;
 import org.apache.hudi.cli.commands.TableCommand;
 import org.apache.hudi.cli.common.HoodieTestCommitMetadataGenerator;
 import org.apache.hudi.common.model.HoodiePartitionMetadata;
-import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.hudi.common.table.timeline.HoodieInstant;
 import org.apache.hudi.common.table.timeline.HoodieTimeline;
 
