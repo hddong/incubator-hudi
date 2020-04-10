@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "triprec",
+  "fields": [
+    {"name": "timestamp","type": "double"},
+    {"name": "uuid", "type": "string"},
+    {"name": "riderName", "type": "string"},
+    {"name": "driverName", "type": "string"},
+    {"name": "beginLat", "type": "double"},
+    {"name": "beginLon", "type": "double"},
+    {"name": "endLat", "type": "double"},
+    {"name": "endLon", "type": "double"},
+    {"name":"fare","type": "double"}
+  ]
+}

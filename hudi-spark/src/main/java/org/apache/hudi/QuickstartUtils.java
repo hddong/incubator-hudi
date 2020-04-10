@@ -78,7 +78,7 @@ public class QuickstartUtils {
       this.existingKeys = keyPartitionMap;
     }
 
-    private static String generateRandomString() {
+    public static String generateRandomString() {
       int leftLimit = 48; // ascii for 0
       int rightLimit = 57; // ascii for 9
       int stringLength = 3;
