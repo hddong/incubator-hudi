@@ -27,11 +27,13 @@ import org.apache.hudi.cli.TableHeader;
 import org.apache.hudi.cli.common.HoodieTestCommitMetadataGenerator;
 import org.apache.hudi.common.model.HoodieCleaningPolicy;
 import org.apache.hudi.common.model.HoodiePartitionMetadata;
+import org.apache.hudi.common.model.HoodieTableType;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.hudi.common.table.timeline.HoodieActiveTimeline;
 import org.apache.hudi.common.table.timeline.HoodieInstant;
 import org.apache.hudi.common.table.timeline.HoodieTimeline;
 import org.apache.hudi.common.table.timeline.TimelineMetadataUtils;
+import org.apache.hudi.common.table.timeline.versioning.TimelineLayoutVersion;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -64,8 +66,8 @@ public class TestCleansCommand extends AbstractShellIntegrationTest {
 
     // Create table and connect
     new TableCommand().createTable(
-        tablePath, tableName,
-        "COPY_ON_WRITE", "", 1, "org.apache.hudi.common.model.HoodieAvroPayload");
+        tablePath, tableName, HoodieTableType.COPY_ON_WRITE.name(),
+        "", TimelineLayoutVersion.VERSION_1, "org.apache.hudi.common.model.HoodieAvroPayload");
 
     Configuration conf = HoodieCLI.conf;
 
@@ -102,7 +104,9 @@ public class TestCleansCommand extends AbstractShellIntegrationTest {
     CommandResult cr = getShell().executeCommand("cleans show");
     assertTrue(cr.isSuccess());
 
-    HoodieInstant clean = metaClient.getActiveTimeline().reload().getCleanerTimeline().getInstants().findFirst().get();
+    HoodieInstant clean = metaClient.getActiveTimeline().reload().getCleanerTimeline().getInstants().findFirst().orElse(null);
+    assertTrue(clean != null);
+
     TableHeader header =
         new TableHeader().addTableHeaderField("CleanTime").addTableHeaderField("EarliestCommandRetained")
             .addTableHeaderField("Total Files Deleted").addTableHeaderField("Total Time Taken");
@@ -130,7 +134,8 @@ public class TestCleansCommand extends AbstractShellIntegrationTest {
     assertEquals("Loaded 1 clean and the count should match", 1,
         metaClient.getActiveTimeline().reload().getCleanerTimeline().getInstants().count());
 
-    HoodieInstant clean = metaClient.getActiveTimeline().reload().getCleanerTimeline().getInstants().findFirst().get();
+    HoodieInstant clean = metaClient.getActiveTimeline().reload().getCleanerTimeline().getInstants().findFirst().orElse(null);
+    assertTrue(clean != null);
 
     CommandResult cr = getShell().executeCommand("clean showpartitions --clean " + clean.getTimestamp());
     assertTrue(cr.isSuccess());
@@ -161,6 +166,6 @@ public class TestCleansCommand extends AbstractShellIntegrationTest {
           TimelineMetadataUtils.deserializeHoodieCleanMetadata(timeline.getInstantDetails(clean).get());
       return cleanMetadata.getTimeTakenInMillis();
     }
-    return new Long(-1);
+    return -1L;
   }
 }
