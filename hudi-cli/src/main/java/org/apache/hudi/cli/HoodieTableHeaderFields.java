@@ -23,8 +23,11 @@ package org.apache.hudi.cli;
  */
 public class HoodieTableHeaderFields {
   public static final String HEADER_PARTITION = "Partition";
+  public static final String HEADER_PARTITION_PATH = HEADER_PARTITION + " Path";
   public static final String HEADER_FILE_ID = "FileId";
   public static final String HEADER_BASE_INSTANT = "Base-Instant";
+
+  public static final String HEADER_CLEANING_POLICY = "Cleaning policy";
 
   /**
    * Fields of data header.

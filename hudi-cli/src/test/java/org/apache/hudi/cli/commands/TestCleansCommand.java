@@ -20,10 +20,7 @@ package org.apache.hudi.cli.commands;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hudi.avro.model.HoodieCleanMetadata;
-import org.apache.hudi.cli.AbstractShellIntegrationTest;
-import org.apache.hudi.cli.HoodieCLI;
-import org.apache.hudi.cli.HoodiePrintHelper;
-import org.apache.hudi.cli.TableHeader;
+import org.apache.hudi.cli.*;
 import org.apache.hudi.cli.common.HoodieTestCommitMetadataGenerator;
 import org.apache.hudi.common.model.HoodieCleaningPolicy;
 import org.apache.hudi.common.model.HoodiePartitionMetadata;
@@ -140,7 +137,8 @@ public class TestCleansCommand extends AbstractShellIntegrationTest {
     CommandResult cr = getShell().executeCommand("clean showpartitions --clean " + clean.getTimestamp());
     assertTrue(cr.isSuccess());
 
-    TableHeader header = new TableHeader().addTableHeaderField("Partition Path").addTableHeaderField("Cleaning policy")
+    TableHeader header = new TableHeader().addTableHeaderField(HoodieTableHeaderFields.HEADER_PARTITION_PATH)
+        .addTableHeaderField(HoodieTableHeaderFields.HEADER_CLEANING_POLICY)
         .addTableHeaderField("Total Files Successfully Deleted").addTableHeaderField("Total Failed Deletions");
 
     // There should be two partition path
