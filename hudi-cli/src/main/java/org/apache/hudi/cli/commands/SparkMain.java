@@ -302,7 +302,7 @@ public class SparkMain {
       return 0;
     } catch (HoodieSavepointException se) {
       LOG.info(String.format("Failed: Could not create savepoint \"%s\".", commitTime));
-      return 1;
+      return -1;
     }
   }
 

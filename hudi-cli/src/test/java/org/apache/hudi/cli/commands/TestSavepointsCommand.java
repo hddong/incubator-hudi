@@ -23,6 +23,7 @@ import org.apache.hudi.cli.HoodieCLI;
 import org.apache.hudi.cli.HoodiePrintHelper;
 import org.apache.hudi.cli.HoodieTableHeaderFields;
 import org.apache.hudi.common.HoodieTestDataGenerator;
+import org.apache.hudi.common.model.HoodieAvroPayload;
 import org.apache.hudi.common.model.HoodieTableType;
 import org.apache.hudi.common.table.timeline.HoodieTimeline;
 import org.apache.hudi.common.table.timeline.versioning.TimelineLayoutVersion;
@@ -46,21 +47,55 @@ public class TestSavepointsCommand extends AbstractShellIntegrationTest {
   private String tablePath;
 
   @BeforeEach
-  public void init() throws IOException {
+  public void init() {
     String tableName = "test_table";
     tablePath = basePath + File.separator + tableName;
+  }
 
+  private void createTableAndConnect(HoodieTableType type) throws IOException {
     // Create table and connect
     new TableCommand().createTable(
-        tablePath, "test_table", HoodieTableType.COPY_ON_WRITE.name(),
-        "", TimelineLayoutVersion.VERSION_1, "org.apache.hudi.common.model.HoodieAvroPayload");
+        tablePath, "test_table", type.name(),
+        "", TimelineLayoutVersion.VERSION_1, HoodieAvroPayload.class.getName());
   }
 
   /**
-   * Test case of command 'savepoints show'.
+   * Test 'savepoints show' for COPY_ON_WRITE table.
    */
   @Test
-  public void testShowSavepoints() throws IOException {
+  public void testShowSavepointsForCOW() throws IOException {
+    createTableAndConnect(HoodieTableType.COPY_ON_WRITE);
+    testShowSavepoints();
+  }
+
+  /**
+   * Test 'savepoints refresh' for COPY_ON_WRITE table.
+   */
+  @Test
+  public void testRefreshMetaClientForCOW() throws IOException {
+    createTableAndConnect(HoodieTableType.COPY_ON_WRITE);
+    testRefreshMetaClient();
+  }
+
+  /**
+   * Test 'savepoints show' for MERGE_ON_READ table.
+   */
+  @Test
+  public void testShowSavepointsForMOR() throws IOException {
+    createTableAndConnect(HoodieTableType.MERGE_ON_READ);
+    testShowSavepoints();
+  }
+
+  /**
+   * Test 'savepoints refresh' for MERGE_ON_READ table.
+   */
+  @Test
+  public void testRefreshMetaClientForMOR() throws IOException {
+    createTableAndConnect(HoodieTableType.MERGE_ON_READ);
+    testRefreshMetaClient();
+  }
+
+  private void testShowSavepoints() throws IOException {
     // generate four savepoints
     for (int i = 100; i < 104; i++) {
       String instantTime = String.valueOf(i);
@@ -78,11 +113,7 @@ public class TestSavepointsCommand extends AbstractShellIntegrationTest {
     assertEquals(expected, cr.getResult().toString());
   }
 
-  /**
-   * Test case of command 'savepoints refresh'.
-   */
-  @Test
-  public void testRefreshMetaClient() throws IOException {
+  private void testRefreshMetaClient() throws IOException {
     HoodieTimeline timeline =
         HoodieCLI.getTableMetaClient().getActiveTimeline().getSavePointTimeline().filterCompletedInstants();
     assertEquals(0, timeline.countInstants(), "There should have no instant at first");

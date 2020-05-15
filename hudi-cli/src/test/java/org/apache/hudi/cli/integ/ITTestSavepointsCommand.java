@@ -22,6 +22,7 @@ import org.apache.hudi.cli.AbstractShellIntegrationTest;
 import org.apache.hudi.cli.HoodieCLI;
 import org.apache.hudi.cli.commands.TableCommand;
 import org.apache.hudi.common.HoodieTestDataGenerator;
+import org.apache.hudi.common.model.HoodieAvroPayload;
 import org.apache.hudi.common.model.HoodieTableType;
 import org.apache.hudi.common.table.timeline.HoodieActiveTimeline;
 import org.apache.hudi.common.table.timeline.HoodieInstant;
@@ -52,21 +53,73 @@ public class ITTestSavepointsCommand extends AbstractShellIntegrationTest {
   private String tablePath;
 
   @BeforeEach
-  public void init() throws IOException {
+  public void init() {
     String tableName = "test_table";
     tablePath = basePath + File.separator + tableName;
+  }
 
+  private void createTableAndConnect(HoodieTableType type) throws IOException {
     // Create table and connect
     new TableCommand().createTable(
-        tablePath, "test_table", HoodieTableType.COPY_ON_WRITE.name(),
-        "", TimelineLayoutVersion.VERSION_1, "org.apache.hudi.common.model.HoodieAvroPayload");
+        tablePath, "test_table", type.name(),
+        "", TimelineLayoutVersion.VERSION_1, HoodieAvroPayload.class.getName());
   }
 
   /**
-   * Test case of command 'savepoint create'.
+   * Test command 'savepoint create' for COPY_ON_WRITE table.
    */
   @Test
-  public void testSavepoint() {
+  public void testSavepointForCOW() throws IOException {
+    createTableAndConnect(HoodieTableType.COPY_ON_WRITE);
+    testSavepoint();
+  }
+
+  /**
+   * Test command 'savepoint create' for MERGE_ON_READ table.
+   */
+  @Test
+  public void testSavepointForMOR() throws IOException {
+    createTableAndConnect(HoodieTableType.MERGE_ON_READ);
+    testSavepoint();
+  }
+
+  /**
+   * Test command 'savepoint rollback' for COPY_ON_WRITE table.
+   */
+  @Test
+  public void testRollbackToSavepointForCOW() throws IOException {
+    createTableAndConnect(HoodieTableType.COPY_ON_WRITE);
+    testRollbackToSavepoint();
+  }
+
+  /**
+   * Test command 'savepoint rollback' for MERGE_ON_READ table.
+   */
+  @Test
+  public void testRollbackToSavepointForMOR() throws IOException {
+    createTableAndConnect(HoodieTableType.MERGE_ON_READ);
+    testRollbackToSavepoint();
+  }
+
+  /**
+   * Test command 'savepoint delete' for COPY_ON_WRITE table.
+   */
+  @Test
+  public void testDeleteSavepointForCOW() throws IOException {
+    createTableAndConnect(HoodieTableType.COPY_ON_WRITE);
+    testDeleteSavepoint();
+  }
+
+  /**
+   * Test command 'savepoint delete' for COPY_ON_WRITE table.
+   */
+  @Test
+  public void testDeleteSavepointForMOR() throws IOException {
+    createTableAndConnect(HoodieTableType.MERGE_ON_READ);
+    testDeleteSavepoint();
+  }
+
+  private void testSavepoint() {
     // generate four savepoints
     for (int i = 100; i < 104; i++) {
       String instantTime = String.valueOf(i);
@@ -87,11 +140,7 @@ public class ITTestSavepointsCommand extends AbstractShellIntegrationTest {
     assertEquals(1, timeline.getSavePointTimeline().countInstants());
   }
 
-  /**
-   * Test case of command 'savepoint rollback'.
-   */
-  @Test
-  public void testRollbackToSavepoint() throws IOException {
+  private void testRollbackToSavepoint() throws IOException {
     // generate four savepoints
     for (int i = 100; i < 104; i++) {
       String instantTime = String.valueOf(i);
@@ -119,11 +168,7 @@ public class ITTestSavepointsCommand extends AbstractShellIntegrationTest {
         new HoodieInstant(HoodieInstant.State.COMPLETED, "commit", "103")));
   }
 
-  /**
-   * Test case of command 'savepoint delete'.
-   */
-  @Test
-  public void testDeleteSavepoint() throws IOException {
+  private void testDeleteSavepoint() throws IOException {
     // generate four savepoints
     for (int i = 100; i < 104; i++) {
       String instantTime = String.valueOf(i);
