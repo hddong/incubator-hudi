@@ -214,15 +214,18 @@ public class CommitsCommand implements CommandMarker {
     }
   }
 
-  @CliCommand(value = "commits refresh", help = "Refresh the commits")
-  public String refreshCommits() throws IOException {
+  @CliCommand(value = {"commits refresh", "refresh"}, help = "Refresh the commits")
+  public String refreshCommits() {
     HoodieCLI.refreshTableMetadata();
     return "Metadata for table " + HoodieCLI.getTableMetaClient().getTableConfig().getTableName() + " refreshed.";
   }
 
   @CliCommand(value = "commit rollback", help = "Rollback a commit")
   public String rollbackCommit(@CliOption(key = {"commit"}, help = "Commit to rollback") final String instantTime,
-      @CliOption(key = {"sparkProperties"}, help = "Spark Properties File Path") final String sparkPropertiesPath)
+      @CliOption(key = {"sparkProperties"}, help = "Spark Properties File Path") final String sparkPropertiesPath,
+      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "", help = "Spark Master") String master,
+      @CliOption(key = "sparkMemory", unspecifiedDefaultValue = "4G",
+         help = "Spark executor memory") final String sparkMemory)
       throws Exception {
     HoodieActiveTimeline activeTimeline = HoodieCLI.getTableMetaClient().getActiveTimeline();
     HoodieTimeline completedTimeline = activeTimeline.getCommitsTimeline().filterCompletedInstants();
@@ -232,7 +235,7 @@ public class CommitsCommand implements CommandMarker {
     }
 
     SparkLauncher sparkLauncher = SparkUtil.initLauncher(sparkPropertiesPath);
-    sparkLauncher.addAppArgs(SparkMain.SparkCommand.ROLLBACK.toString(), instantTime,
+    sparkLauncher.addAppArgs(SparkMain.SparkCommand.ROLLBACK.toString(), master, sparkMemory, instantTime,
         HoodieCLI.getTableMetaClient().getBasePath());
     Process process = sparkLauncher.launch();
     InputStreamConsumer.captureOutput(process);
@@ -344,17 +347,16 @@ public class CommitsCommand implements CommandMarker {
   }
 
   @CliCommand(value = "commits compare", help = "Compare commits with another Hoodie table")
-  public String compareCommits(@CliOption(key = {"path"}, help = "Path of the table to compare to") final String path)
-      throws Exception {
+  public String compareCommits(@CliOption(key = {"path"}, help = "Path of the table to compare to") final String path) {
 
     HoodieTableMetaClient source = HoodieCLI.getTableMetaClient();
     HoodieTableMetaClient target = new HoodieTableMetaClient(HoodieCLI.conf, path);
     HoodieTimeline targetTimeline = target.getActiveTimeline().getCommitsTimeline().filterCompletedInstants();
     HoodieTimeline sourceTimeline = source.getActiveTimeline().getCommitsTimeline().filterCompletedInstants();
     String targetLatestCommit =
-        targetTimeline.getInstants().iterator().hasNext() ? "0" : targetTimeline.lastInstant().get().getTimestamp();
+        targetTimeline.getInstants().iterator().hasNext() ? targetTimeline.lastInstant().get().getTimestamp() : "0";
     String sourceLatestCommit =
-        sourceTimeline.getInstants().iterator().hasNext() ? "0" : sourceTimeline.lastInstant().get().getTimestamp();
+        sourceTimeline.getInstants().iterator().hasNext() ? sourceTimeline.lastInstant().get().getTimestamp() : "0";
 
     if (sourceLatestCommit != null
         && HoodieTimeline.compareTimestamps(targetLatestCommit, HoodieTimeline.GREATER_THAN, sourceLatestCommit)) {

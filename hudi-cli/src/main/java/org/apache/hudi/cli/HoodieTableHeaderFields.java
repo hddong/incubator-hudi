@@ -113,4 +113,14 @@ public class HoodieTableHeaderFields {
   public static final String HEADER_HISTOGRAM_NUM_FILES = "NumFiles";
   public static final String HEADER_HISTOGRAM_STD_DEV = "StdDev";
 
+  /**
+   * Fields of Commit.
+   */
+  public static final String HEADER_TOTAL_BYTES_WRITTEN = "Total Bytes Written";
+  public static final String HEADER_TOTAL_FILES_ADDED = "Total Files Added";
+  public static final String HEADER_TOTAL_FILES_UPDATED = "Total Files Updated";
+  public static final String HEADER_TOTAL_PARTITIONS_WRITTEN = "Total Partitions Written";
+  public static final String HEADER_TOTAL_RECORDS_WRITTEN = "Total Records Written";
+  public static final String HEADER_TOTAL_UPDATE_RECORDS_WRITTEN = "Total Update Records Written";
+  public static final String HEADER_TOTAL_ERRORS = "Total Errors";
 }
