@@ -18,15 +18,18 @@
 
 package org.apache.hudi.common.table.timeline;
 
+import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.file.FileReader;
 import org.apache.avro.file.SeekableByteArrayInput;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.DatumWriter;
+import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecordBase;
+import org.apache.hudi.avro.HoodieAvroUtils;
 import org.apache.hudi.avro.model.HoodieCleanMetadata;
 import org.apache.hudi.avro.model.HoodieCleanerPlan;
 import org.apache.hudi.avro.model.HoodieCompactionPlan;
@@ -160,5 +163,14 @@ public class TimelineMetadataUtils {
     FileReader<T> fileReader = DataFileReader.openReader(new SeekableByteArrayInput(bytes), reader);
     ValidationUtils.checkArgument(fileReader.hasNext(), "Could not deserialize metadata of type " + clazz);
     return fileReader.next();
+  }
+
+  public static <T extends SpecificRecordBase> T deserializeAvroRecordMetadata(byte[] bytes, Schema schema, Class<T> clazz)
+      throws IOException {
+    return  deserializeAvroRecordMetadata(HoodieAvroUtils.bytesToAvro(bytes, schema), schema, clazz);
+  }
+
+  public static <T extends SpecificRecordBase> T deserializeAvroRecordMetadata(Object object, Schema schema, Class<T> clazz) {
+    return  (T) SpecificData.get().deepCopy(schema, object);
   }
 }

@@ -149,10 +149,10 @@ public class CompactionCommand implements CommandMarker {
     }
 
     HoodieTableMetaClient client = checkAndGetMetaClient();
-    HoodieArchivedTimeline archivedTimeline = client.getArchivedTimeline();
-    archivedTimeline.loadInstantDetailsInMemory(startTs, endTs);
+    HoodieArchivedTimeline archivedTimeline = client.getArchivedTimeline().filterArchivedCompactionInstant();
+    archivedTimeline.loadCompactionDetailsInMemory(startTs, endTs);
     try {
-      return printAllCompactions(archivedTimeline,
+      return printAllCompactions(archivedTimeline.getCommitsAndCompactionTimeline(),
               compactionPlanReader(this::readCompactionPlanForArchivedTimeline, archivedTimeline),
               includeExtraMetadata, sortByField, descending, limit, headerOnly);
     } finally {
@@ -175,15 +175,14 @@ public class CompactionCommand implements CommandMarker {
     HoodieArchivedTimeline archivedTimeline = client.getArchivedTimeline();
     HoodieInstant instant = new HoodieInstant(HoodieInstant.State.COMPLETED,
             HoodieTimeline.COMPACTION_ACTION, compactionInstantTime);
-    String startTs = CommitUtil.addHours(compactionInstantTime, -1);
-    String endTs = CommitUtil.addHours(compactionInstantTime, 1);
     try {
-      archivedTimeline.loadInstantDetailsInMemory(startTs, endTs);
-      HoodieCompactionPlan compactionPlan = TimelineMetadataUtils.deserializeCompactionPlan(
-              archivedTimeline.getInstantDetails(instant).get());
+      archivedTimeline.loadCompactionDetailsInMemory(compactionInstantTime, compactionInstantTime);
+      HoodieCompactionPlan compactionPlan = TimelineMetadataUtils.deserializeAvroRecordMetadata(
+              archivedTimeline.getInstantDetails(instant).get(), HoodieCompactionPlan.getClassSchema(),
+              HoodieCompactionPlan.class);
       return printCompaction(compactionPlan, sortByField, descending, limit, headerOnly);
     } finally {
-      archivedTimeline.clearInstantDetailsFromMemory(startTs, endTs);
+      archivedTimeline.clearInstantDetailsFromMemory(compactionInstantTime, compactionInstantTime);
     }
   }
 
@@ -330,9 +329,10 @@ public class CompactionCommand implements CommandMarker {
       return null;
     } else {
       try {
-        return TimelineMetadataUtils.deserializeCompactionPlan(archivedTimeline.getInstantDetails(instant).get());
-      } catch (IOException e) {
-        throw new HoodieIOException(e.getMessage(), e);
+        return TimelineMetadataUtils.deserializeAvroRecordMetadata(archivedTimeline.getInstantDetails(instant).get(),
+            HoodieCompactionPlan.getClassSchema(), HoodieCompactionPlan.class);
+      } catch (Exception e) {
+        throw new HoodieException(e.getMessage(), e);
       }
     }
   }

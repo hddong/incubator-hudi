@@ -68,6 +68,9 @@ public class HoodieWriteClientExample {
   private static String tableType = HoodieTableType.COPY_ON_WRITE.name();
 
   public static void main(String[] args) throws Exception {
+    args = new String[2];
+    args[0] = "/tmp/test_tt";
+    args[1] = "test_tt";
     if (args.length < 2) {
       System.err.println("Usage: HoodieWriteClientExample <tablePath> <tableName>");
       System.exit(1);

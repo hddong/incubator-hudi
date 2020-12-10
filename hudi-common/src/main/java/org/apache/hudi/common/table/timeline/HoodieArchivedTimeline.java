@@ -18,6 +18,7 @@
 
 package org.apache.hudi.common.table.timeline;
 
+import org.apache.hudi.avro.HoodieAvroUtils;
 import org.apache.hudi.avro.model.HoodieArchivedMetaEntry;
 import org.apache.hudi.common.model.HoodieLogFile;
 import org.apache.hudi.common.model.HoodiePartitionMetadata;
@@ -36,7 +37,6 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -66,6 +66,7 @@ public class HoodieArchivedTimeline extends HoodieDefaultTimeline {
 
   private static final String HOODIE_COMMIT_ARCHIVE_LOG_FILE_PREFIX = "commits";
   private static final String ACTION_TYPE_KEY = "actionType";
+  private static final String ACTION_STATE = "actionState";
   private HoodieTableMetaClient metaClient;
   private Map<String, byte[]> readCommits = new HashMap<>();
 
@@ -79,6 +80,14 @@ public class HoodieArchivedTimeline extends HoodieDefaultTimeline {
   public HoodieArchivedTimeline(HoodieTableMetaClient metaClient) {
     this.metaClient = metaClient;
     setInstants(this.loadInstants(false));
+    // multiple casts will make this lambda serializable -
+    // http://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.16
+    this.details = (Function<HoodieInstant, Option<byte[]>> & Serializable) this::getInstantDetails;
+  }
+
+  public HoodieArchivedTimeline(HoodieTableMetaClient metaClient, Stream<HoodieInstant> instants) {
+    this.metaClient = metaClient;
+    setInstants(instants.collect(Collectors.toList()));
     // multiple casts will make this lambda serializable -
     // http://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.16
     this.details = (Function<HoodieInstant, Option<byte[]>> & Serializable) this::getInstantDetails;
@@ -108,6 +117,14 @@ public class HoodieArchivedTimeline extends HoodieDefaultTimeline {
     loadInstants(startTs, endTs);
   }
 
+  public void loadCompactionDetailsInMemory(String startTs, String endTs) {
+    // load compactionPlan
+    loadInstants(new TimeRangeFilter(startTs, endTs), true, record ->
+        record.get(ACTION_TYPE_KEY).toString().equals(HoodieTimeline.COMPACTION_ACTION)
+            && HoodieInstant.State.REQUESTED.toString().equals(record.get("actionState").toString())
+    );
+  }
+
   public void clearInstantDetailsFromMemory(String startTs, String endTs) {
     this.findInstantsInRange(startTs, endTs).getInstants().forEach(instant ->
             this.readCommits.remove(instant.getTimestamp()));
@@ -127,10 +144,10 @@ public class HoodieArchivedTimeline extends HoodieDefaultTimeline {
     final String action = record.get(ACTION_TYPE_KEY).toString();
     if (loadDetails) {
       Option.ofNullable(record.get(getMetadataKey(action))).map(actionData ->
-              this.readCommits.put(instantTime, actionData.toString().getBytes(StandardCharsets.UTF_8))
+            this.readCommits.put(instantTime, HoodieAvroUtils.indexedRecordToBytes((IndexedRecord)actionData))
       );
     }
-    return new HoodieInstant(false, action, instantTime);
+    return new HoodieInstant(HoodieInstant.State.valueOf(record.get(ACTION_STATE).toString()), action, instantTime);
   }
 
   private String getMetadataKey(String action) {
@@ -145,6 +162,8 @@ public class HoodieArchivedTimeline extends HoodieDefaultTimeline {
         return "hoodieRollbackMetadata";
       case HoodieTimeline.SAVEPOINT_ACTION:
         return "hoodieSavePointMetadata";
+      case HoodieTimeline.COMPACTION_ACTION:
+        return "hoodieCompactionPlan";
       default:
         throw new HoodieIOException("Unknown action in metadata " + action);
     }
@@ -158,12 +177,18 @@ public class HoodieArchivedTimeline extends HoodieDefaultTimeline {
     return loadInstants(new TimeRangeFilter(startTs, endTs), true);
   }
 
+  private List<HoodieInstant> loadInstants(TimeRangeFilter filter, boolean loadInstantDetails) {
+    return loadInstants(filter, loadInstantDetails, record -> true);
+  }
+
   /**
    * This is method to read selected instants. Do NOT use this directly use one of the helper methods above
    * If loadInstantDetails is set to true, this would also update 'readCommits' map with commit details
    * If filter is specified, only the filtered instants are loaded
+   * If commitsFilter is specified, only the filtered records are loaded
    */
-  private List<HoodieInstant> loadInstants(TimeRangeFilter filter, boolean loadInstantDetails) {
+  private List<HoodieInstant> loadInstants(TimeRangeFilter filter, boolean loadInstantDetails,
+       Function<GenericRecord, Boolean> commitsFilter) {
     try {
       // list all files
       FileStatus[] fsStatuses = metaClient.getFs().globStatus(
@@ -187,6 +212,7 @@ public class HoodieArchivedTimeline extends HoodieDefaultTimeline {
             List<IndexedRecord> records = blk.getRecords();
             // filter blocks in desired time window
             Stream<HoodieInstant> instantsInBlkStream = records.stream()
+                    .filter(r -> commitsFilter.apply((GenericRecord) r))
                     .map(r -> readCommit((GenericRecord) r, loadInstantDetails));
 
             if (filter != null) {
@@ -253,5 +279,11 @@ public class HoodieArchivedTimeline extends HoodieDefaultTimeline {
       // return default value in case of any errors
       return 0;
     }
+  }
+
+  public HoodieArchivedTimeline filterArchivedCompactionInstant() {
+    // filter INFLIGHT compaction instants
+    return new HoodieArchivedTimeline(this.metaClient, getInstants().filter(i ->
+        i.isInflight() && i.getAction().equals(HoodieTimeline.COMPACTION_ACTION)));
   }
 }
