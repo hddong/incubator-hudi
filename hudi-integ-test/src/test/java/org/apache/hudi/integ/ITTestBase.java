@@ -182,6 +182,7 @@ public abstract class ITTestBase {
     if (exitCode != 0) {
       LOG.error("\n\n ###### Stdout #######\n" + callback.getStdout().toString());
     }
+    LOG.error("\n\n ###### Stdout #######\n" + callback.getStdout().toString());
     LOG.error("\n\n ###### Stderr #######\n" + callback.getStderr().toString());
 
     if (expectedToSucceed) {
@@ -199,14 +200,19 @@ public abstract class ITTestBase {
     }
   }
 
-  protected TestExecStartResultCallback executeCommandStringInDocker(String containerName, String cmd, boolean expectedToSucceed)
+  protected TestExecStartResultCallback executeCommandStringInDocker(String containerName, String[] cmdSplits, boolean expectedToSucceed)
       throws Exception {
     LOG.info("\n\n#################################################################################################");
-    LOG.info("Container : " + containerName + ", Running command :" + cmd);
+    LOG.info("Container : " + containerName + ", Running command :" + String.join(" ", cmdSplits));
     LOG.info("\n#################################################################################################");
 
-    String[] cmdSplits = singleSpace(cmd).split(" ");
     return executeCommandInDocker(containerName, cmdSplits, expectedToSucceed);
+  }
+
+  protected TestExecStartResultCallback executeCommandStringInDocker(String containerName, String cmd, boolean expectedToSucceed)
+      throws Exception {
+    String[] cmdSplits = singleSpace(cmd).split(" ");
+    return executeCommandStringInDocker(containerName, cmdSplits, expectedToSucceed);
   }
 
   protected Pair<String, String> executeHiveCommand(String hiveCommand) throws Exception {

@@ -211,6 +211,7 @@ public class HoodieSparkMergeOnReadTableCompactor<T extends HoodieRecordPayload>
     context.setJobStatus(this.getClass().getSimpleName(), "Looking for files to compact");
 
     List<HoodieCompactionOperation> operations = context.flatMap(partitionPaths, partitionPath -> {
+      LOG.info("--------------");
       return fileSystemView
           .getLatestFileSlices(partitionPath)
           .filter(slice -> !fgIdsInPendingCompactions.contains(slice.getFileGroupId()))
@@ -223,6 +224,7 @@ public class HoodieSparkMergeOnReadTableCompactor<T extends HoodieRecordPayload>
             // for spark Map operations and collecting them finally in Avro generated classes for storing
             // into meta files.
             Option<HoodieBaseFile> dataFile = s.getBaseFile();
+            LOG.info(dataFile.get());
             return new CompactionOperation(dataFile, partitionPath, logFiles,
                 config.getCompactionStrategy().captureMetrics(config, dataFile, partitionPath, logFiles));
           })

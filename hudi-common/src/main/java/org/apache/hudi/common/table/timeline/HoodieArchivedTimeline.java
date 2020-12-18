@@ -25,6 +25,7 @@ import org.apache.hudi.common.model.HoodiePartitionMetadata;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.hudi.common.table.log.HoodieLogFormat;
 import org.apache.hudi.common.table.log.block.HoodieAvroDataBlock;
+import org.apache.hudi.common.util.CollectionUtils;
 import org.apache.hudi.common.util.Option;
 import org.apache.hudi.exception.HoodieIOException;
 
@@ -46,6 +47,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -121,7 +123,7 @@ public class HoodieArchivedTimeline extends HoodieDefaultTimeline {
     // load compactionPlan
     loadInstants(new TimeRangeFilter(startTs, endTs), true, record ->
         record.get(ACTION_TYPE_KEY).toString().equals(HoodieTimeline.COMPACTION_ACTION)
-            && HoodieInstant.State.REQUESTED.toString().equals(record.get("actionState").toString())
+            && HoodieInstant.State.INFLIGHT.toString().equals(record.get("actionState").toString())
     );
   }
 
@@ -279,6 +281,15 @@ public class HoodieArchivedTimeline extends HoodieDefaultTimeline {
       // return default value in case of any errors
       return 0;
     }
+  }
+
+  @Override
+  public HoodieDefaultTimeline getCommitsAndCompactionTimeline() {
+    // filter in-memory instants
+    Set<String> validActions = CollectionUtils.createSet(COMMIT_ACTION, DELTA_COMMIT_ACTION, COMPACTION_ACTION, REPLACE_COMMIT_ACTION);
+    return new HoodieDefaultTimeline(getInstants().filter(i ->
+        readCommits.keySet().contains(i.getTimestamp()))
+        .filter(s -> validActions.contains(s.getAction())), details);
   }
 
   public HoodieArchivedTimeline filterArchivedCompactionInstant() {

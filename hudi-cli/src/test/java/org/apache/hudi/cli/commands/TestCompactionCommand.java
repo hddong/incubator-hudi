@@ -18,6 +18,7 @@
 
 package org.apache.hudi.cli.commands;
 
+import org.apache.hudi.avro.model.HoodieCompactionPlan;
 import org.apache.hudi.cli.HoodieCLI;
 import org.apache.hudi.cli.HoodiePrintHelper;
 import org.apache.hudi.cli.TableHeader;
@@ -28,6 +29,8 @@ import org.apache.hudi.common.model.HoodieTableType;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.hudi.common.table.timeline.HoodieActiveTimeline;
 import org.apache.hudi.common.table.timeline.HoodieInstant;
+import org.apache.hudi.common.table.timeline.HoodieTimeline;
+import org.apache.hudi.common.table.timeline.TimelineMetadataUtils;
 import org.apache.hudi.common.table.timeline.versioning.TimelineLayoutVersion;
 import org.apache.hudi.common.testutils.CompactionTestUtils;
 import org.apache.hudi.common.util.Option;
@@ -47,6 +50,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.apache.hudi.common.table.timeline.HoodieTimeline.COMPACTION_ACTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -122,23 +127,25 @@ public class TestCompactionCommand extends AbstractShellIntegrationTest {
     System.out.println(cr.getResult().toString());
   }
 
-  @Test
-  public void testCompactionsShowArchived() throws IOException {
+  private void generateCompactionInstances() throws IOException {
     // create MOR table.
     new TableCommand().createTable(
         tablePath, tableName, HoodieTableType.MERGE_ON_READ.name(),
         "", TimelineLayoutVersion.VERSION_1, HoodieAvroPayload.class.getName());
 
-    CompactionTestUtils.setupAndValidateCompactionOperations(HoodieCLI.getTableMetaClient(), true, 3, 4, 3, 3);
+    CompactionTestUtils.setupAndValidateCompactionOperations(HoodieCLI.getTableMetaClient(), true, 1, 2, 3, 4);
 
     HoodieActiveTimeline activeTimeline = HoodieCLI.getTableMetaClient().reloadActiveTimeline();
     // Create six commits
     Arrays.asList("001", "003", "005", "007").forEach(timestamp -> {
-      activeTimeline.transitionCompactionInflightToComplete(new HoodieInstant(HoodieInstant.State.INFLIGHT, COMPACTION_ACTION, timestamp), Option.empty());
+      activeTimeline.transitionCompactionInflightToComplete(
+          new HoodieInstant(HoodieInstant.State.INFLIGHT, COMPACTION_ACTION, timestamp), Option.empty());
     });
 
     metaClient = HoodieTableMetaClient.reload(HoodieCLI.getTableMetaClient());
+  }
 
+  private void generateArchive() throws IOException {
     // Generate archive
     HoodieWriteConfig cfg = HoodieWriteConfig.newBuilder().withPath(tablePath)
         .withSchema(HoodieTestCommitMetadataGenerator.TRIP_EXAMPLE_SCHEMA).withParallelism(2, 2)
@@ -149,40 +156,52 @@ public class TestCompactionCommand extends AbstractShellIntegrationTest {
     HoodieSparkTable table = HoodieSparkTable.create(cfg, context, metaClient);
     HoodieTimelineArchiveLog archiveLog = new HoodieTimelineArchiveLog(cfg, table);
     archiveLog.archiveIfRequired(context);
+  }
+
+  @Test
+  public void testCompactionsShowArchived() throws IOException {
+    generateCompactionInstances();
+
+    generateArchive();
 
     CommandResult cr = getShell().executeCommand("compactions showarchived --startTs 001 --endTs 005");
-    System.out.println(cr.getResult().toString());
+
+    // generate result
+    Map<String, Integer> fileMap = new HashMap<>();
+    fileMap.put("001", 1);
+    fileMap.put("003", 2);
+    fileMap.put("005", 3);
+    List<Comparable[]> rows = Arrays.asList("005", "003", "001").stream().map(i ->
+        new Comparable[] {i, HoodieInstant.State.COMPLETED, fileMap.get(i)}).collect(Collectors.toList());
+    Map<String, Function<Object, String>> fieldNameToConverterMap = new HashMap<>();
+    TableHeader header = new TableHeader().addTableHeaderField("Compaction Instant Time").addTableHeaderField("State")
+        .addTableHeaderField("Total FileIds to be Compacted");
+    String expected = HoodiePrintHelper.print(header, fieldNameToConverterMap, "", false, -1, false, rows);
+
+    expected = removeNonWordAndStripSpace(expected);
+    String got = removeNonWordAndStripSpace(cr.getResult().toString());
+    assertEquals(expected, got);
   }
 
   @Test
   public void testCompactionShowArchived() throws IOException {
-    // create MOR table.
-    new TableCommand().createTable(
-        tablePath, tableName, HoodieTableType.MERGE_ON_READ.name(),
-        "", TimelineLayoutVersion.VERSION_1, HoodieAvroPayload.class.getName());
+    generateCompactionInstances();
 
-    CompactionTestUtils.setupAndValidateCompactionOperations(HoodieCLI.getTableMetaClient(), true, 3, 4, 3, 3);
+    String instance = "001";
+    // get compaction plan before compaction
+    HoodieCompactionPlan plan = TimelineMetadataUtils.deserializeCompactionPlan(
+        HoodieCLI.getTableMetaClient().reloadActiveTimeline().readCompactionPlanAsBytes(
+            HoodieTimeline.getCompactionRequestedInstant(instance)).get());
 
-    HoodieActiveTimeline activeTimeline = HoodieCLI.getTableMetaClient().reloadActiveTimeline();
-    // Create six commits
-    Arrays.asList("001", "003", "005", "007").forEach(timestamp -> {
-      activeTimeline.transitionCompactionInflightToComplete(new HoodieInstant(HoodieInstant.State.INFLIGHT, COMPACTION_ACTION, timestamp), Option.empty());
-    });
+    generateArchive();
 
-    metaClient = HoodieTableMetaClient.reload(HoodieCLI.getTableMetaClient());
+    CommandResult cr = getShell().executeCommand("compaction showarchived --instant " + instance);
 
-    // Generate archive
-    HoodieWriteConfig cfg = HoodieWriteConfig.newBuilder().withPath(tablePath)
-        .withSchema(HoodieTestCommitMetadataGenerator.TRIP_EXAMPLE_SCHEMA).withParallelism(2, 2)
-        .withCompactionConfig(HoodieCompactionConfig.newBuilder().retainCommits(1).archiveCommitsWith(2, 3).build())
-        .forTable("test-trip-table").build();
-    // archive
-    metaClient = HoodieTableMetaClient.reload(HoodieCLI.getTableMetaClient());
-    HoodieSparkTable table = HoodieSparkTable.create(cfg, context, metaClient);
-    HoodieTimelineArchiveLog archiveLog = new HoodieTimelineArchiveLog(cfg, table);
-    archiveLog.archiveIfRequired(context);
+    // generate expected
+    String expected = new CompactionCommand().printCompaction(plan, "", false, -1, false);
 
-    CommandResult cr = getShell().executeCommand("compaction showarchived --instant 001");
-    System.out.println(cr.getResult().toString());
+    expected = removeNonWordAndStripSpace(expected);
+    String got = removeNonWordAndStripSpace(cr.getResult().toString());
+    assertEquals(expected, got);
   }
 }

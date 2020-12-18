@@ -93,6 +93,7 @@ public class SparkUtil {
 
     SparkRDDWriteClient.registerClasses(sparkConf);
     JavaSparkContext jsc = new JavaSparkContext(sparkConf);
+    jsc.setLogLevel("INFO");
     jsc.hadoopConfiguration().setBoolean(HoodieCliSparkConfig.CLI_PARQUET_ENABLE_SUMMARY_METADATA, false);
     FSUtils.prepareHadoopConf(jsc.hadoopConfiguration());
     return jsc;

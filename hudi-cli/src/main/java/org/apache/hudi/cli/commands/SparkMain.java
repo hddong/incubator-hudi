@@ -120,20 +120,20 @@ public class SparkMain {
         if (args.length > 9) {
           configs.addAll(Arrays.asList(args).subList(9, args.length));
         }
-        returnCode = compact(jsc, args[1], args[2], args[3], Integer.parseInt(args[4]), args[5], args[6],
+        returnCode = compact(jsc, args[1], args[2], args[3], Integer.parseInt(args[4]), args[5],
             Integer.parseInt(args[7]), false, propsFilePath, configs);
         break;
       case COMPACT_SCHEDULE:
-        assert (args.length >= 6);
+        assert (args.length >= 7);
         propsFilePath = null;
-        if (!StringUtils.isNullOrEmpty(args[5])) {
-          propsFilePath = args[5];
+        if (!StringUtils.isNullOrEmpty(args[6])) {
+          propsFilePath = args[6];
         }
         configs = new ArrayList<>();
-        if (args.length > 6) {
-          configs.addAll(Arrays.asList(args).subList(6, args.length));
+        if (args.length > 7) {
+          configs.addAll(Arrays.asList(args).subList(7, args.length));
         }
-        returnCode = compact(jsc, args[1], args[2], args[3], 1, "", args[4], 0, true, propsFilePath, configs);
+        returnCode = compact(jsc, args[3], args[4], args[5], 1, "", 0, true, propsFilePath, configs);
         break;
       case COMPACT_VALIDATE:
         assert (args.length == 7);
@@ -288,7 +288,7 @@ public class SparkMain {
   }
 
   private static int compact(JavaSparkContext jsc, String basePath, String tableName, String compactionInstant,
-      int parallelism, String schemaFile, String sparkMemory, int retry, boolean schedule, String propsFilePath,
+      int parallelism, String schemaFile, int retry, boolean schedule, String propsFilePath,
       List<String> configs) {
     HoodieCompactor.Config cfg = new HoodieCompactor.Config();
     cfg.basePath = basePath;
@@ -301,7 +301,6 @@ public class SparkMain {
     cfg.runSchedule = schedule;
     cfg.propsFilePath = propsFilePath;
     cfg.configs = configs;
-    jsc.getConf().set("spark.executor.memory", sparkMemory);
     return new HoodieCompactor(jsc, cfg).compact(retry);
   }
 

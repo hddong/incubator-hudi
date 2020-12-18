@@ -43,7 +43,7 @@ public class InputStreamConsumer extends Thread {
       BufferedReader br = new BufferedReader(isr);
       String line;
       while ((line = br.readLine()) != null) {
-        LOG.info(line);
+        LOG.warning(line);
       }
     } catch (IOException ioe) {
       LOG.severe(ioe.toString());

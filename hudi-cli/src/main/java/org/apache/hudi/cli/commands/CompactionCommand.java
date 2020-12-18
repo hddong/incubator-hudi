@@ -149,10 +149,10 @@ public class CompactionCommand implements CommandMarker {
     }
 
     HoodieTableMetaClient client = checkAndGetMetaClient();
-    HoodieArchivedTimeline archivedTimeline = client.getArchivedTimeline().filterArchivedCompactionInstant();
+    HoodieArchivedTimeline archivedTimeline = client.getArchivedTimeline();
     archivedTimeline.loadCompactionDetailsInMemory(startTs, endTs);
     try {
-      return printAllCompactions(archivedTimeline.getCommitsAndCompactionTimeline(),
+      return printAllCompactions(archivedTimeline,
               compactionPlanReader(this::readCompactionPlanForArchivedTimeline, archivedTimeline),
               includeExtraMetadata, sortByField, descending, limit, headerOnly);
     } finally {
@@ -192,7 +192,9 @@ public class CompactionCommand implements CommandMarker {
                                 @CliOption(key = "propsFilePath", help = "path to properties file on localfs or dfs with configurations for hoodie client for compacting",
                                   unspecifiedDefaultValue = "") final String propsFilePath,
                                 @CliOption(key = "hoodieConfigs", help = "Any configuration that can be set in the properties file can be passed here in the form of an array",
-                                  unspecifiedDefaultValue = "") final String[] configs) throws Exception {
+                                  unspecifiedDefaultValue = "") final String[] configs,
+                                @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "", help = "Spark Master ") String master)
+      throws Exception {
     HoodieTableMetaClient client = checkAndGetMetaClient();
     boolean initialized = HoodieCLI.initConf();
     HoodieCLI.initFS(initialized);
@@ -203,8 +205,9 @@ public class CompactionCommand implements CommandMarker {
     String sparkPropertiesPath =
         Utils.getDefaultPropertiesFile(scala.collection.JavaConversions.propertiesAsScalaMap(System.getProperties()));
     SparkLauncher sparkLauncher = SparkUtil.initLauncher(sparkPropertiesPath);
-    sparkLauncher.addAppArgs(SparkCommand.COMPACT_SCHEDULE.toString(), client.getBasePath(),
-        client.getTableConfig().getTableName(), compactionInstantTime, sparkMemory, propsFilePath);
+    String cmd = SparkCommand.COMPACT_SCHEDULE.toString();
+    sparkLauncher.addAppArgs(cmd, master, sparkMemory, client.getBasePath(),
+        client.getTableConfig().getTableName(), compactionInstantTime, propsFilePath);
     UtilHelpers.validateAndAddProperties(configs, sparkLauncher);
     Process process = sparkLauncher.launch();
     InputStreamConsumer.captureOutput(process);
@@ -278,15 +281,15 @@ public class CompactionCommand implements CommandMarker {
             .filter(pair -> pair.getRight() != null)
             .collect(Collectors.toList());
 
-    Set<HoodieInstant> committedInstants = timeline.getCommitTimeline().filterCompletedInstants()
-            .getInstants().collect(Collectors.toSet());
+    Set<String> committedInstants = timeline.getCommitTimeline().filterCompletedInstants()
+            .getInstants().map(HoodieInstant::getTimestamp).collect(Collectors.toSet());
 
     List<Comparable[]> rows = new ArrayList<>();
     for (Pair<HoodieInstant, HoodieCompactionPlan> compactionPlan : compactionPlans) {
       HoodieCompactionPlan plan = compactionPlan.getRight();
       HoodieInstant instant = compactionPlan.getLeft();
       final HoodieInstant.State state;
-      if (committedInstants.contains(instant)) {
+      if (committedInstants.contains(instant.getTimestamp())) {
         state = HoodieInstant.State.COMPLETED;
       } else {
         state = instant.getState();
@@ -325,15 +328,17 @@ public class CompactionCommand implements CommandMarker {
 
   private HoodieCompactionPlan readCompactionPlanForArchivedTimeline(HoodieArchivedTimeline archivedTimeline,
                                                                      HoodieInstant instant) {
-    if (!HoodieTimeline.COMPACTION_ACTION.equals(instant.getAction())) {
-      return null;
-    } else {
+    // filter inflight compaction
+    if (HoodieTimeline.COMPACTION_ACTION.equals(instant.getAction())
+        && HoodieInstant.State.INFLIGHT.equals(instant.getState())) {
       try {
         return TimelineMetadataUtils.deserializeAvroRecordMetadata(archivedTimeline.getInstantDetails(instant).get(),
             HoodieCompactionPlan.getClassSchema(), HoodieCompactionPlan.class);
       } catch (Exception e) {
         throw new HoodieException(e.getMessage(), e);
       }
+    } else {
+      return null;
     }
   }
 
@@ -362,7 +367,7 @@ public class CompactionCommand implements CommandMarker {
     }
   }
 
-  private String printCompaction(HoodieCompactionPlan compactionPlan,
+  protected String printCompaction(HoodieCompactionPlan compactionPlan,
                                  String sortByField,
                                  boolean descending,
                                  int limit,
