@@ -65,6 +65,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Integration test class for {@link org.apache.hudi.cli.commands.CompactionCommand}.
+ * <p/>
+ * A command use SparkLauncher need load jars under lib which generate during mvn package.
+ * Use integration test instead of unit test.
+ */
 public class ITTestCompactionCommand extends AbstractShellIntegrationTest {
 
   private String tablePath;
@@ -84,6 +90,9 @@ public class ITTestCompactionCommand extends AbstractShellIntegrationTest {
     metaClient = HoodieTableMetaClient.reload(metaClient);
   }
 
+  /**
+   * Test case for command 'compaction schedule'.
+   */
   @Test
   public void testScheduleCompact() throws IOException {
     // generate commits
@@ -102,6 +111,9 @@ public class ITTestCompactionCommand extends AbstractShellIntegrationTest {
     assertEquals(1, timeline.filterPendingCompactionTimeline().countInstants());
   }
 
+  /**
+   * Test case for command 'compaction run'.
+   */
   @Test
   public void testCompact() throws IOException {
     // generate commits
@@ -128,6 +140,9 @@ public class ITTestCompactionCommand extends AbstractShellIntegrationTest {
         "Pending compaction must be completed");
   }
 
+  /**
+   * Test case for command 'compaction validate'.
+   */
   @Test
   public void testValidateCompaction() throws IOException {
     // generate commits
@@ -146,7 +161,7 @@ public class ITTestCompactionCommand extends AbstractShellIntegrationTest {
   }
 
   /**
-   * This function mainly tests the workflow of compaction unschedule command.
+   * This function mainly tests the workflow of 'compaction unschedule' command.
    * The real test of {@link org.apache.hudi.client.CompactionAdminClient#unscheduleCompactionPlan}
    * is {@link TestCompactionAdminClient#testUnscheduleCompactionPlan()}.
    */
@@ -168,7 +183,7 @@ public class ITTestCompactionCommand extends AbstractShellIntegrationTest {
   }
 
   /**
-   * This function mainly tests the workflow of compaction unscheduleFileId command.
+   * This function mainly tests the workflow of 'compaction unscheduleFileId' command.
    * The real test of {@link org.apache.hudi.client.CompactionAdminClient#unscheduleCompactionFileId}
    * is {@link TestCompactionAdminClient#testUnscheduleCompactionFileId}.
    */
@@ -192,7 +207,7 @@ public class ITTestCompactionCommand extends AbstractShellIntegrationTest {
   }
 
   /**
-   * This function mainly tests the workflow of compaction repair command.
+   * This function mainly tests the workflow of 'compaction repair' command.
    * The real test of {@link org.apache.hudi.client.CompactionAdminClient#repairCompaction}
    * is {@link TestCompactionAdminClient#testRepairCompactionPlan}.
    */

@@ -83,6 +83,9 @@ public class TestCompactionCommand extends AbstractShellIntegrationTest {
         () -> new CompactionCommand().compactionsAll(false, -1, "", false, false));
   }
 
+  /**
+   * Test case for command 'compactions show all'.
+   */
   @Test
   public void testCompactionsAll() throws IOException {
     // create MOR table.
@@ -112,6 +115,9 @@ public class TestCompactionCommand extends AbstractShellIntegrationTest {
     assertEquals(expected, cr.getResult().toString());
   }
 
+  /**
+   * Test case for command 'compaction show'.
+   */
   @Test
   public void testCompactionShow() throws IOException {
     // create MOR table.
@@ -158,6 +164,9 @@ public class TestCompactionCommand extends AbstractShellIntegrationTest {
     archiveLog.archiveIfRequired(context);
   }
 
+  /**
+   * Test case for command 'compactions showarchived'.
+   */
   @Test
   public void testCompactionsShowArchived() throws IOException {
     generateCompactionInstances();
@@ -183,6 +192,9 @@ public class TestCompactionCommand extends AbstractShellIntegrationTest {
     assertEquals(expected, got);
   }
 
+  /**
+   * Test case for command 'compaction showarchived'.
+   */
   @Test
   public void testCompactionShowArchived() throws IOException {
     generateCompactionInstances();

@@ -139,8 +139,7 @@ public class CompactionCommand implements CommandMarker {
           @CliOption(key = {"sortBy"}, help = "Sorting Field", unspecifiedDefaultValue = "") final String sortByField,
           @CliOption(key = {"desc"}, help = "Ordering", unspecifiedDefaultValue = "false") final boolean descending,
           @CliOption(key = {"headeronly"}, help = "Print Header Only",
-                  unspecifiedDefaultValue = "false") final boolean headerOnly)
-          throws Exception {
+                  unspecifiedDefaultValue = "false") final boolean headerOnly) {
     if (StringUtils.isNullOrEmpty(startTs)) {
       startTs = CommitUtil.getTimeDaysAgo(10);
     }
@@ -193,7 +192,7 @@ public class CompactionCommand implements CommandMarker {
           unspecifiedDefaultValue = "") final String propsFilePath,
       @CliOption(key = "hoodieConfigs", help = "Any configuration that can be set in the properties file can be passed here in the form of an array",
           unspecifiedDefaultValue = "") final String[] configs,
-      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local", help = "Spark Master ") String master)
+      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local", help = "Spark Master") String master)
       throws Exception {
     HoodieTableMetaClient client = checkAndGetMetaClient();
     boolean initialized = HoodieCLI.initConf();
@@ -225,7 +224,7 @@ public class CompactionCommand implements CommandMarker {
       @CliOption(key = "schemaFilePath", mandatory = true,
           help = "Path for Avro schema file") final String schemaFilePath,
       @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local",
-          help = "Spark Master ") String master,
+          help = "Spark Master") String master,
       @CliOption(key = "sparkMemory", unspecifiedDefaultValue = "4G",
           help = "Spark executor memory") final String sparkMemory,
       @CliOption(key = "retry", unspecifiedDefaultValue = "1", help = "Number of retries") final String retry,
@@ -308,7 +307,8 @@ public class CompactionCommand implements CommandMarker {
     }
 
     Map<String, Function<Object, String>> fieldNameToConverterMap = new HashMap<>();
-    TableHeader header = new TableHeader().addTableHeaderField(HoodieTableHeaderFields.HEADER_COMPACTION_INSTANT_TIME)
+    TableHeader header = new TableHeader()
+        .addTableHeaderField(HoodieTableHeaderFields.HEADER_COMPACTION_INSTANT_TIME)
         .addTableHeaderField(HoodieTableHeaderFields.HEADER_STATE)
         .addTableHeaderField(HoodieTableHeaderFields.HEADER_TOTAL_FILES_TO_BE_COMPACTED);
     if (includeExtraMetadata) {
@@ -384,7 +384,8 @@ public class CompactionCommand implements CommandMarker {
     }
 
     Map<String, Function<Object, String>> fieldNameToConverterMap = new HashMap<>();
-    TableHeader header = new TableHeader().addTableHeaderField(HoodieTableHeaderFields.HEADER_PARTITION_PATH)
+    TableHeader header = new TableHeader()
+        .addTableHeaderField(HoodieTableHeaderFields.HEADER_PARTITION_PATH)
         .addTableHeaderField(HoodieTableHeaderFields.HEADER_FILE_ID)
         .addTableHeaderField(HoodieTableHeaderFields.HEADER_BASE_INSTANT)
         .addTableHeaderField(HoodieTableHeaderFields.HEADER_DATA_FILE_PATH)
@@ -415,7 +416,7 @@ public class CompactionCommand implements CommandMarker {
   public String validateCompaction(
       @CliOption(key = "instant", mandatory = true, help = "Compaction Instant") String compactionInstant,
       @CliOption(key = {"parallelism"}, unspecifiedDefaultValue = "3", help = "Parallelism") String parallelism,
-      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local", help = "Spark Master ") String master,
+      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local", help = "Spark Master") String master,
       @CliOption(key = "sparkMemory", unspecifiedDefaultValue = "2G", help = "executor memory") String sparkMemory,
       @CliOption(key = {"limit"}, help = "Limit commits", unspecifiedDefaultValue = "-1") Integer limit,
       @CliOption(key = {"sortBy"}, help = "Sorting Field", unspecifiedDefaultValue = "") String sortByField,
@@ -455,7 +456,8 @@ public class CompactionCommand implements CommandMarker {
       });
 
       Map<String, Function<Object, String>> fieldNameToConverterMap = new HashMap<>();
-      TableHeader header = new TableHeader().addTableHeaderField(HoodieTableHeaderFields.HEADER_FILE_ID)
+      TableHeader header = new TableHeader()
+          .addTableHeaderField(HoodieTableHeaderFields.HEADER_FILE_ID)
           .addTableHeaderField(HoodieTableHeaderFields.HEADER_BASE_INSTANT_TIME)
           .addTableHeaderField(HoodieTableHeaderFields.HEADER_BASE_DATA_FILE)
           .addTableHeaderField(HoodieTableHeaderFields.HEADER_NUM_DELTA_FILES)
@@ -477,7 +479,7 @@ public class CompactionCommand implements CommandMarker {
   public String unscheduleCompaction(
       @CliOption(key = "instant", mandatory = true, help = "Compaction Instant") String compactionInstant,
       @CliOption(key = {"parallelism"}, unspecifiedDefaultValue = "3", help = "Parallelism") String parallelism,
-      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local", help = "Spark Master ") String master,
+      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local", help = "Spark Master") String master,
       @CliOption(key = "sparkMemory", unspecifiedDefaultValue = "2G", help = "executor memory") String sparkMemory,
       @CliOption(key = {"skipValidation"}, help = "skip validation", unspecifiedDefaultValue = "false") boolean skipV,
       @CliOption(key = {"dryRun"}, help = "Dry Run Mode", unspecifiedDefaultValue = "false") boolean dryRun,
@@ -523,7 +525,7 @@ public class CompactionCommand implements CommandMarker {
   public String unscheduleCompactFile(
       @CliOption(key = "fileId", mandatory = true, help = "File Id") final String fileId,
       @CliOption(key = "partitionPath", mandatory = true, help = "partition path") final String partitionPath,
-      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local", help = "Spark Master ") String master,
+      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local", help = "Spark Master") String master,
       @CliOption(key = "sparkMemory", unspecifiedDefaultValue = "2G", help = "executor memory") String sparkMemory,
       @CliOption(key = {"skipValidation"}, help = "skip validation", unspecifiedDefaultValue = "false") boolean skipV,
       @CliOption(key = {"dryRun"}, help = "Dry Run Mode", unspecifiedDefaultValue = "false") boolean dryRun,
@@ -569,7 +571,7 @@ public class CompactionCommand implements CommandMarker {
   public String repairCompaction(
       @CliOption(key = "instant", mandatory = true, help = "Compaction Instant") String compactionInstant,
       @CliOption(key = {"parallelism"}, unspecifiedDefaultValue = "3", help = "Parallelism") String parallelism,
-      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local", help = "Spark Master ") String master,
+      @CliOption(key = "sparkMaster", unspecifiedDefaultValue = "local", help = "Spark Master") String master,
       @CliOption(key = "sparkMemory", unspecifiedDefaultValue = "2G", help = "executor memory") String sparkMemory,
       @CliOption(key = {"dryRun"}, help = "Dry Run Mode", unspecifiedDefaultValue = "false") boolean dryRun,
       @CliOption(key = {"limit"}, help = "Limit commits", unspecifiedDefaultValue = "-1") Integer limit,
@@ -631,7 +633,8 @@ public class CompactionCommand implements CommandMarker {
       });
 
       Map<String, Function<Object, String>> fieldNameToConverterMap = new HashMap<>();
-      TableHeader header = new TableHeader().addTableHeaderField(HoodieTableHeaderFields.HEADER_FILE_ID)
+      TableHeader header = new TableHeader()
+          .addTableHeaderField(HoodieTableHeaderFields.HEADER_FILE_ID)
           .addTableHeaderField(HoodieTableHeaderFields.HEADER_SOURCE_FILE_PATH)
           .addTableHeaderField(HoodieTableHeaderFields.HEADER_DESTINATION_FILE_PATH)
           .addTableHeaderField(HoodieTableHeaderFields.HEADER_RENAME_EXECUTED)
