@@ -114,6 +114,9 @@
                   <include>org.apache.hbase:hbase-protocol</include>
                   <include>org.apache.hbase:hbase-server</include>
                   <include>org.apache.htrace:htrace-core</include>
+
+                  <include>org.apache.logging.log4j:log4j-core</include>
+                  <include>org.apache.logging.log4j:log4j-api</include>
                 </includes>
               </artifactSet>
               <relocations>
@@ -246,6 +249,12 @@
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase-common</artifactId>
       <version>${hbase.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
@@ -268,6 +277,10 @@
         <exclusion>
           <groupId>tomcat</groupId>
           <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
         </exclusion>
       </exclusions>
     </dependency>

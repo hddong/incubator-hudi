@@ -34,8 +34,8 @@ import org.apache.hudi.io.HoodieKeyLookupHandle;
 import org.apache.hudi.io.HoodieRangeInfoHandle;
 import org.apache.hudi.table.HoodieTable;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import com.beust.jcommander.internal.Lists;
 
 import java.util.ArrayList;
